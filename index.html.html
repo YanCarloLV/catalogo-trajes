@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Suits | Catálogo Inteligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { --black: #000; --gray: #f8f8f8; --border: #e0e0e0; --accent: #666; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #fff; color: var(--black); -webkit-font-smoothing: antialiased; }
+
+        /* PANTALLA DE CARGA (Visible solo 1 segundo mientras lee el Excel) */
+        #loadingScreen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; text-align: center; }
+        #loadingScreen h1 { font-weight: 200; letter-spacing: 5px; font-size: 24px; text-transform: uppercase; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* CATÁLOGO PRINCIPAL */
+        #mainContent { display: none; animation: fadeIn 0.8s ease-out; }
+        
+        header { padding: 40px 5% 20px; text-align: center; border-bottom: 1px solid var(--border); }
+        header h1 { font-weight: 200; letter-spacing: 8px; text-transform: uppercase; font-size: 28px; }
+
+        .nav-sticky { position: sticky; top: 0; background: rgba(255,255,255,0.95); z-index: 100; border-bottom: 1px solid var(--border); padding: 15px 5%; display: flex; flex-direction: column; gap: 15px; align-items: center; backdrop-filter: blur(10px); }
+        .tab-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        button.tab-btn { padding: 10px 20px; border: 1px solid var(--black); background: transparent; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; transition: all 0.3s ease; }
+        button.tab-btn.active { background: var(--black); color: #fff; transform: scale(1.05); }
+        button.tab-btn:hover:not(.active) { background: var(--gray); }
+
+        .search-bar { width: 100%; max-width: 600px; padding: 12px 20px; border: 1px solid var(--border); border-radius: 25px; font-size: 13px; outline: none; text-align: center; transition: 0.3s; }
+        .search-bar:focus { border-color: var(--black); box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+
+        .container { padding: 40px 5%; }
+        .line-section { margin-bottom: 80px; animation: slideUp 0.6s ease-out; }
+        .line-title { font-weight: 600; text-transform: uppercase; font-size: 14px; letter-spacing: 2px; margin-bottom: 30px; display: flex; align-items: center; color: var(--black); }
+        .line-title::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 20px; }
+
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        
+        .suit-card { border: 1px solid var(--border); padding: 15px; position: relative; transition: all 0.4s ease; background: #fff; animation: scaleIn 0.5s ease-out backwards; }
+        .suit-card:hover { border-color: var(--black); box-shadow: 0 8px 25px rgba(0,0,0,0.08); transform: translateY(-5px); }
+
+        .image-box { height: 380px; background: var(--gray); margin-bottom: 15px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+        .suit-card:hover .image-box img { transform: scale(1.05); }
+        
+        .stock-tag { position: absolute; top: 20px; left: 20px; background: #fff; padding: 5px 12px; font-size: 10px; font-weight: 600; border: 1px solid #000; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        .suit-info h3 { font-size: 14px; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+        .suit-info p { font-size: 11px; color: var(--accent); margin-bottom: 15px; }
+        .action-btn { width: 100%; padding: 14px; background: var(--black); color: #fff; border: none; font-size: 10px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase; transition: 0.3s; }
+        .action-btn:hover { background: #333; }
+
+        .pagination-controls { display: flex; gap: 15px; justify-content: center; }
+        .btn-ver-mas, .btn-ver-menos { padding: 15px 30px; border: 1px solid var(--black); background: #fff; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
+        .btn-ver-mas:hover, .btn-ver-menos:hover { background: var(--black); color: #fff; }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 2000; padding: 40px 10%; overflow-y: auto; animation: fadeIn 0.3s ease-out; }
+        .close-modal { position: fixed; top: 20px; right: 30px; font-size: 40px; cursor: pointer; font-weight: 200; transition: 0.3s; }
+        .close-modal:hover { transform: rotate(90deg); }
+        table { width: 100%; border-collapse: collapse; margin-top: 30px; animation: slideUp 0.4s ease-out; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid #000; font-size: 11px; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .low { color: #d00; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div id="loadingScreen">
+    <h1>Cargando Colección...</h1>
+    <p style="color: #666; font-size: 11px; margin-top: 10px; letter-spacing: 2px;">Sincronizando inventario en tiempo real</p>
+</div>
+
+<div id="mainContent">
+    <header>
+        <h1>Men's Collection</h1>
+        <p style="font-size: 10px; letter-spacing: 3px; color: #888;">Inventario Premium Organizado</p>
+    </header>
+
+    <div class="nav-sticky">
+        <div class="tab-group" id="catTabs">
+            <button class="tab-btn active" onclick="setCat('Cat 1')">Categoría 1 (Seleccionados)</button>
+            <button class="tab-btn" onclick="setCat('Cat 3')">Categoría 3 (Collection)</button>
+        </div>
+        <div class="tab-group" id="lineTabs"></div>
+        <input type="text" id="searchBox" class="search-bar" placeholder="Búsqueda rápida por modelo o color..." onkeyup="filterCatalog()">
+    </div>
+
+    <div class="container" id="catalogBody"></div>
+</div>
+
+<div class="modal" id="stockModal">
+    <span class="close-modal" onclick="closeModal()">×</span>
+    <h2 id="mTitle" style="font-weight: 300; font-size: 32px; text-transform: uppercase;"></h2>
+    <p id="mColor" style="color: #666; margin-top: 5px; letter-spacing: 1px; font-size: 14px;"></p>
+    <div id="mTable"></div>
+</div>
+
+<script>
+    let rawInventoryData = []; 
+    let groupedInventory = [];
+    let currentCat = 'Cat 1';
+    let currentLine = 'Todas';
+    let visibleLimits = {};
+
+    // 1. CARGA AUTOMÁTICA AL ABRIR LA PÁGINA
+    window.onload = async function() {
+        try {
+            // Intenta descargar el archivo inventario.xlsx que subiremos a GitHub
+            const response = await fetch('./inventario.xlsx');
+            if(!response.ok) throw new Error("Archivo no encontrado");
+            
+            const data = await response.arrayBuffer();
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            // Leemos todas las pestañas y detectamos automáticamente a qué categoría pertenecen
+            workbook.SheetNames.forEach(sheetName => {
+                const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+                if(sheet.length > 0) {
+                    // Lógica para detectar Categoría según el nombre de la pestaña del Excel
+                    let catName = 'Cat 1'; 
+                    if(sheetName.toUpperCase().includes('COLLECTION') || sheetName.toUpperCase().includes('3') || sheetName.toUpperCase().includes('G')) {
+                        catName = 'Cat 3';
+                    }
+                    procesarDatos(sheet, catName);
+                }
+            });
+
+            iniciarCatalogo();
+        } catch (error) {
+            console.error("Error cargando inventario:", error);
+            document.getElementById('loadingScreen').innerHTML = "<h1>Error</h1><p>No se encontró el archivo inventario.xlsx en el servidor.</p>";
+        }
+    };
+
+    function procesarDatos(rows, catAsignada) {
+        for(let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+            if(!row || row.length < 3) continue;
+            
+            let id = String(row[1] || "N/A");
+            let desc = String(row[2] || "").trim().toUpperCase();
+            let qty = parseInt(row[3]) || 1;
+
+            if(!desc.includes("TRAJE")) continue;
+
+            let parts = desc.split(/\s+/);
+            let size = "S/N", model = "VARIADO", color = "";
+            let sizeIndex = -1;
+
+            for(let j = 0; j < parts.length; j++) {
+                if(/^\d+[RCL]$/.test(parts[j])) {
+                    size = parts[j];
+                    sizeIndex = j;
+                    break;
+                }
+            }
+
+            if(sizeIndex !== -1 && parts.length > sizeIndex + 1) {
+                model = parts[sizeIndex + 1]; 
+                color = parts.slice(sizeIndex + 2).join(" "); 
+            } else if(parts.length >= 3) {
+                size = parts[1];
+                model = parts[2];
+                color = parts.slice(3).join(" ");
+            }
+            if(!color) color = "ESTÁNDAR";
+
+            let line = "Variados";
+            if (model.startsWith("C67901")) line = "C67901";
+            else if (model.startsWith("C")) line = "C";
+            else if (model.startsWith("G")) line = "G";
+            else if (model.startsWith("E")) line = "E";
+            else if (/^1\d*/.test(model)) line = "100";
+            else if (/^2\d*/.test(model)) line = "200";
+            else if (/^3\d*/.test(model)) line = "300";
+            else if (/^[89]\d*/.test(model)) line = "800";
+
+            rawInventoryData.push({ cat: catAsignada, line: line, id: id, model: model, color: color, size: size, qty: qty });
+        }
+    }
+
+    function iniciarCatalogo() {
+        const families = {};
+        rawInventoryData.forEach(p => {
+            const key = p.cat + p.model + p.color;
+            if (!families[key]) {
+                families[key] = { cat: p.cat, line: p.line, model: p.model, color: p.color, variants: [] };
+            }
+            let existing = families[key].variants.find(v => v.size === p.size && v.id === p.id);
+            if(existing) existing.stock += p.qty;
+            else families[key].variants.push({ id: p.id, size: p.size, stock: p.qty });
+        });
+
+        groupedInventory = Object.values(families);
+        
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        
+        setCat('Cat 1');
+    }
+
+    function generarPestanasDinamicas() {
+        const tabsContainer = document.getElementById('lineTabs');
+        const linesInCurrentCat = [...new Set(groupedInventory.filter(i => i.cat === currentCat).map(i => i.line))];
+        
+        let html = `<button class="tab-btn ${currentLine === 'Todas' ? 'active' : ''}" onclick="setLine('Todas')">TODAS</button>`;
+        const masterOrder = ['100', '200', '300', '800', 'C67901', 'C', 'G', 'E', 'Variados'];
+        
+        masterOrder.forEach(l => {
+            if (linesInCurrentCat.includes(l)) {
+                let isActive = currentLine === l ? 'active' : '';
+                let label = l === 'Variados' ? 'Variados' : `Línea ${l}`;
+                html += `<button class="tab-btn ${isActive}" onclick="setLine('${l}')">${label}</button>`;
+            }
+        });
+
+        tabsContainer.innerHTML = html;
+        if (currentLine !== 'Todas' && !linesInCurrentCat.includes(currentLine)) setLine('Todas');
+    }
+
+    function resetLimitesAnimacion() {
+        visibleLimits = {};
+        const masterOrder = ['100', '200', '300', '800', 'C67901', 'C', 'G', 'E', 'Variados'];
+        masterOrder.forEach(l => visibleLimits[l] = 4);
+    }
+
+    function renderCatalog() {
+        const body = document.getElementById('catalogBody');
+        body.innerHTML = '';
+        const lineNames = { '100':'Línea 100', '200':'Línea 200', '300':'Línea 300', '800':'Línea 800/900', 'C67901':'Línea C67901', 'C':'Línea C', 'G':'Línea G', 'E':'Línea E', 'Variados':'Modelos Únicos' };
+
+        Object.keys(lineNames).forEach(lKey => {
+            if (currentLine !== 'Todas' && currentLine !== lKey) return;
+            
+            const filtered = groupedInventory.filter(f => f.cat === currentCat && f.line === lKey);
+            
+            if (filtered.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'line-section';
+                section.innerHTML = `<h2 class="line-title">${lineNames[lKey]}</h2>`;
+                const grid = document.createElement('div');
+                grid.className = 'catalog-grid';
+
+                let limit = visibleLimits[lKey];
+                let itemsToShow = filtered.slice(0, limit);
+                let hasMore = filtered.length > limit;
+
+                itemsToShow.forEach(suit => {
+                    const total = suit.variants.reduce((a, b) => a + b.stock, 0);
+                    const card = document.createElement('div');
+                    card.className = 'suit-card';
+                    
+                    // LÓGICA DE FOTOS: Busca la foto en la carpeta "fotos" con el nombre del modelo
+                    // Si falla (onerror), pone el placeholder gris de COLLECTION
+                    let imagePath = `./fotos/${suit.model}.jpg`;
+
+                    card.innerHTML = `
+                        <div class="stock-tag">${total} PZAS</div>
+                        <div class="image-box">
+                            <img src="${imagePath}" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x600?text=COLLECTION';" alt="${suit.model}">
+                        </div>
+                        <div class="suit-info">
+                            <h3>${suit.model}</h3>
+                            <p>${suit.color}</p>
+                            <button class="action-btn" onclick="verStock('${suit.model}', '${suit.color}')">Ver Disponibilidad</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                section.appendChild(grid);
+
+                if (hasMore || limit > 4) {
+                    const controlDiv = document.createElement('div');
+                    controlDiv.className = 'pagination-controls';
+                    if (hasMore) {
+                        const btnMore = document.createElement('button');
+                        btnMore.className = 'btn-ver-mas';
+                        btnMore.innerText = `Ver más modelos (${filtered.length - limit})`;
+                        btnMore.onclick = () => { visibleLimits[lKey] += 8; renderCatalog(); };
+                        controlDiv.appendChild(btnMore);
+                    }
+                    if (limit > 4) {
+                        const btnLess = document.createElement('button');
+                        btnLess.className = 'btn-ver-menos';
+                        btnLess.innerText = `Mostrar menos`;
+                        btnLess.onclick = () => { visibleLimits[lKey] = 4; renderCatalog(); };
+                        controlDiv.appendChild(btnLess);
+                    }
+                    section.appendChild(controlDiv);
+                }
+                body.appendChild(section);
+            }
+        });
+    }
+
+    function verStock(m, c) {
+        const suit = groupedInventory.find(f => f.model === m && f.color === c);
+        document.getElementById('mTitle').innerText = suit.model;
+        document.getElementById('mColor').innerText = suit.color;
+        let t = `<table><tr><th>ID STOCK</th><th>TALLA</th><th>CANTIDAD</th></tr>`;
+        suit.variants.forEach(v => {
+            t += `<tr><td>${v.id}</td><td>${v.size}</td><td class="${v.stock < 2 ? 'low' : ''}">${v.stock} PZ</td></tr>`;
+        });
+        document.getElementById('mTable').innerHTML = t + `</table>`;
+        document.getElementById('stockModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('stockModal').style.display = 'none'; }
+
+    function setCat(c) { 
+        currentCat = c; 
+        document.querySelectorAll('#catTabs button').forEach(b => {
+            if(b.innerText.includes(c)) b.classList.add('active'); else b.classList.remove('active');
+        });
+        resetLimitesAnimacion();
+        generarPestanasDinamicas(); 
+        renderCatalog(); 
+    }
+    
+    function setLine(l) { 
+        currentLine = l; 
+        generarPestanasDinamicas(); 
+        resetLimitesAnimacion();
+        renderCatalog(); 
+    }
+
+    function filterCatalog() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('.suit-card').forEach(c => {
+            c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+        });
+    }
+</script>
+</body>
+</html>
