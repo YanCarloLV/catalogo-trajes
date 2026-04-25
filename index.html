@@ -11,7 +11,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: #fff; color: var(--black); -webkit-font-smoothing: antialiased; }
 
-        /* PANTALLA DE CARGA (Visible solo 1 segundo mientras lee el Excel) */
+        /* PANTALLA DE CARGA */
         #loadingScreen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; text-align: center; }
         #loadingScreen h1 { font-weight: 200; letter-spacing: 5px; font-size: 24px; text-transform: uppercase; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
@@ -42,7 +42,7 @@
         .suit-card:hover { border-color: var(--black); box-shadow: 0 8px 25px rgba(0,0,0,0.08); transform: translateY(-5px); }
 
         .image-box { height: 380px; background: var(--gray); margin-bottom: 15px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; cursor: zoom-in; }
         .suit-card:hover .image-box img { transform: scale(1.05); }
         
         .stock-tag { position: absolute; top: 20px; left: 20px; background: #fff; padding: 5px 12px; font-size: 10px; font-weight: 600; border: 1px solid #000; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -56,7 +56,7 @@
         .btn-ver-mas, .btn-ver-menos { padding: 15px 30px; border: 1px solid var(--black); background: #fff; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
         .btn-ver-mas:hover, .btn-ver-menos:hover { background: var(--black); color: #fff; }
 
-        /* MODAL */
+        /* MODAL DE STOCK */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 2000; padding: 40px 10%; overflow-y: auto; animation: fadeIn 0.3s ease-out; }
         .close-modal { position: fixed; top: 20px; right: 30px; font-size: 40px; cursor: pointer; font-weight: 200; transition: 0.3s; }
         .close-modal:hover { transform: rotate(90deg); }
@@ -64,6 +64,12 @@
         th { text-align: left; padding: 15px; border-bottom: 2px solid #000; font-size: 11px; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
         .low { color: #d00; font-weight: bold; }
+
+        /* LIGHTBOX PARA VISOR DE FOTOS (NUEVO) */
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; justify-content: center; align-items: center; cursor: zoom-out; animation: fadeIn 0.3s ease; }
+        .lightbox img { max-width: 90%; max-height: 90%; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.5); cursor: default; }
+        .close-lightbox { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 50px; font-weight: 200; cursor: pointer; transition: 0.3s; }
+        .close-lightbox:hover { transform: scale(1.1); color: #ccc; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -102,6 +108,11 @@
     <div id="mTable"></div>
 </div>
 
+<div id="lightboxModal" class="lightbox" onclick="cerrarFoto()">
+    <span class="close-lightbox">&times;</span>
+    <img id="lightboxImg" src="" alt="Vista Previa" onclick="event.stopPropagation()">
+</div>
+
 <script>
     let rawInventoryData = []; 
     let groupedInventory = [];
@@ -109,21 +120,17 @@
     let currentLine = 'Todas';
     let visibleLimits = {};
 
-    // 1. CARGA AUTOMÁTICA AL ABRIR LA PÁGINA
     window.onload = async function() {
         try {
-            // Intenta descargar el archivo inventario.xlsx que subiremos a GitHub
             const response = await fetch('./inventario.xlsx');
             if(!response.ok) throw new Error("Archivo no encontrado");
             
             const data = await response.arrayBuffer();
             const workbook = XLSX.read(data, {type: 'array'});
             
-            // Leemos todas las pestañas y detectamos automáticamente a qué categoría pertenecen
             workbook.SheetNames.forEach(sheetName => {
                 const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
                 if(sheet.length > 0) {
-                    // Lógica para detectar Categoría según el nombre de la pestaña del Excel
                     let catName = 'Cat 1'; 
                     if(sheetName.toUpperCase().includes('COLLECTION') || sheetName.toUpperCase().includes('3') || sheetName.toUpperCase().includes('G')) {
                         catName = 'Cat 3';
@@ -257,14 +264,13 @@
                     const card = document.createElement('div');
                     card.className = 'suit-card';
                     
-                    // LÓGICA DE FOTOS: Busca la foto en la carpeta "fotos" con el nombre del modelo
-                    // Si falla (onerror), pone el placeholder gris de COLLECTION
                     let imagePath = `./fotos/${suit.model}.jpg`;
 
+                    // AQUÍ SE AÑADIÓ EL EVENTO ONCLICK PARA ABRIR LA FOTO EN GRANDE
                     card.innerHTML = `
                         <div class="stock-tag">${total} PZAS</div>
                         <div class="image-box">
-                            <img src="${imagePath}" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x600?text=COLLECTION';" alt="${suit.model}">
+                            <img src="${imagePath}" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x600?text=COLLECTION';" alt="${suit.model}" onclick="abrirFoto(this.src)">
                         </div>
                         <div class="suit-info">
                             <h3>${suit.model}</h3>
@@ -299,6 +305,16 @@
                 body.appendChild(section);
             }
         });
+    }
+
+    // FUNCIONES DEL LIGHTBOX (VISOR DE FOTO EN GRANDE)
+    function abrirFoto(src) {
+        document.getElementById('lightboxImg').src = src;
+        document.getElementById('lightboxModal').style.display = 'flex';
+    }
+
+    function cerrarFoto() {
+        document.getElementById('lightboxModal').style.display = 'none';
     }
 
     function verStock(m, c) {
