@@ -3,130 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Suits | Catálogo Inteligente</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600&display=swap" rel="stylesheet">
+    <title>Premium Suits | E-Commerce & ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --black: #000; --gray: #f8f8f8; --border: #e0e0e0; --accent: #666; }
+        :root { --black: #111; --gray: #f5f5f5; --border: #e0e0e0; --accent: #2968c8; --ml-yellow: #fff159; --green: #00a650; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: #fff; color: var(--black); -webkit-font-smoothing: antialiased; }
+        body { background-color: var(--gray); color: var(--black); -webkit-font-smoothing: antialiased; }
 
         /* PANTALLA DE CARGA */
-        #loadingScreen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; text-align: center; }
-        #loadingScreen h1 { font-weight: 200; letter-spacing: 5px; font-size: 24px; text-transform: uppercase; animation: pulse 1.5s infinite; }
+        #loadingScreen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; z-index: 9999; position: fixed; width: 100%; }
+        #loadingScreen h1 { font-weight: 300; letter-spacing: 2px; font-size: 24px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* CATÁLOGO PRINCIPAL */
-        #mainContent { display: none; animation: fadeIn 0.8s ease-out; }
+        /* HEADER ESTILO E-COMMERCE */
+        header { background-color: #fff; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-weight: 700; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+        .logo span { font-weight: 300; color: #888; font-size: 12px; letter-spacing: 3px; }
         
-        header { padding: 40px 5% 20px; text-align: center; border-bottom: 1px solid var(--border); }
-        header h1 { font-weight: 200; letter-spacing: 8px; text-transform: uppercase; font-size: 28px; }
+        .search-container { flex: 1; max-width: 600px; margin: 0 40px; position: relative; }
+        .search-bar { width: 100%; padding: 12px 20px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; outline: none; transition: 0.3s; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .search-bar:focus { border-color: var(--accent); box-shadow: 0 2px 8px rgba(41, 104, 200, 0.2); }
 
-        .nav-sticky { position: sticky; top: 0; background: rgba(255,255,255,0.95); z-index: 100; border-bottom: 1px solid var(--border); padding: 15px 5%; display: flex; flex-direction: column; gap: 12px; align-items: center; backdrop-filter: blur(10px); }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-view { padding: 10px 15px; border: none; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--accent); border-radius: 4px; transition: 0.3s; }
+        .btn-view:hover { background: #f0f4f8; }
+        .btn-export { background: var(--green); color: #fff; padding: 10px 15px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-export:hover { background: #008a40; }
+
+        /* BARRA DE NAVEGACIÓN DE CATEGORÍAS */
+        .category-nav { background: #fff; padding: 10px 5%; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+        .tab-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .tab-btn { background: none; border: none; font-size: 13px; font-weight: 400; color: #666; cursor: pointer; padding: 5px 0; border-bottom: 2px solid transparent; transition: 0.3s; }
+        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 600; }
+        .tab-btn:hover:not(.active) { color: var(--black); }
+
+        #subCatTabs { display: none; gap: 10px; border-left: 2px solid var(--border); padding-left: 15px; margin-left: 5px; }
+
+        /* VISTA DE CATÁLOGO (GRID) */
+        .container { padding: 30px 5%; }
+        .line-section { margin-bottom: 60px; }
+        .line-title { font-weight: 600; font-size: 18px; margin-bottom: 20px; color: #333; }
         
-        .tab-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         
-        /* BOTONES PRINCIPALES */
-        button.tab-btn { padding: 10px 20px; border: 1px solid var(--black); background: transparent; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; transition: all 0.3s ease; }
-        button.tab-btn.active { background: var(--black); color: #fff; transform: scale(1.05); }
-        button.tab-btn:hover:not(.active) { background: var(--gray); }
+        /* TARJETAS ESTILO E-COMMERCE */
+        .suit-card { background: #fff; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; display: flex; flex-direction: column; position: relative; }
+        .suit-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.08); transform: translateY(-3px); }
 
-        /* BOTONES DE SUB-MENÚ (SHOWROOM) */
-        #subCatTabs { display: none; animation: slideDown 0.3s ease; margin-bottom: 5px; }
-        #subCatTabs button.tab-btn { font-size: 9px; padding: 8px 16px; border-color: var(--accent); color: var(--accent); }
-        #subCatTabs button.tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-        #subCatTabs button.tab-btn:hover:not(.active) { background: #eee; }
-
-        .search-bar { width: 100%; max-width: 600px; padding: 12px 20px; border: 1px solid var(--border); border-radius: 25px; font-size: 13px; outline: none; text-align: center; transition: 0.3s; margin-top: 5px; }
-        .search-bar:focus { border-color: var(--black); box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-
-        .container { padding: 40px 5%; }
-        .line-section { margin-bottom: 80px; animation: slideUp 0.6s ease-out; }
-        .line-title { font-weight: 600; text-transform: uppercase; font-size: 14px; letter-spacing: 2px; margin-bottom: 30px; display: flex; align-items: center; color: var(--black); }
-        .line-title::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 20px; }
-
-        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        .image-box { height: 350px; background: #f9f9f9; position: relative; display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
+        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .suit-card:hover .image-box img { transform: scale(1.03); }
         
-        .suit-card { border: 1px solid var(--border); padding: 15px; position: relative; transition: all 0.4s ease; background: #fff; animation: scaleIn 0.5s ease-out backwards; }
-        .suit-card:hover { border-color: var(--black); box-shadow: 0 8px 25px rgba(0,0,0,0.08); transform: translateY(-5px); }
+        .badge-qty { position: absolute; top: 10px; left: 10px; background: var(--black); color: #fff; padding: 4px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; z-index: 10; }
+        .cross-location-badge { position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.95); color: var(--accent); padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 4px; z-index: 10; border: 1px solid var(--accent); }
 
-        .image-box { height: 380px; background: var(--gray); margin-bottom: 15px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; cursor: zoom-in; }
-        .suit-card:hover .image-box img { transform: scale(1.05); }
+        .suit-info { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .suit-info h3 { font-size: 14px; font-weight: 400; color: #333; margin-bottom: 5px; line-height: 1.3; }
+        .suit-info .color-desc { font-size: 12px; color: #999; margin-bottom: 15px; flex: 1; }
         
-        .stock-tag { position: absolute; top: 20px; left: 20px; background: #fff; padding: 5px 12px; font-size: 10px; font-weight: 600; border: 1px solid #000; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .action-btn { width: 100%; padding: 12px; background: #eaeff5; color: var(--accent); border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .action-btn:hover { background: var(--accent); color: #fff; }
 
-        .suit-info h3 { font-size: 14px; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
-        .suit-info p { font-size: 11px; color: var(--accent); margin-bottom: 15px; }
-        .action-btn { width: 100%; padding: 14px; background: var(--black); color: #fff; border: none; font-size: 10px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase; transition: 0.3s; }
-        .action-btn:hover { background: #333; }
+        /* VISTA DE TABLA (GLOBAL INVENTORY) */
+        #tableView { display: none; background: #fff; padding: 30px 5%; min-height: 100vh; }
+        .table-responsive { overflow-x: auto; margin-top: 20px; }
+        .master-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .master-table th { background: var(--gray); padding: 15px; font-size: 12px; text-transform: uppercase; color: #666; border-bottom: 2px solid var(--border); }
+        .master-table td { padding: 15px; font-size: 13px; border-bottom: 1px solid #eee; }
+        .master-table tr:hover { background: #f9f9f9; }
+        .loc-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+        .loc-cat1 { background: #e3f2fd; color: #1565c0; }
+        .loc-cat4 { background: #f3e5f5; color: #7b1fa2; }
+        .loc-show { background: #e8f5e9; color: #2e7d32; }
 
-        .pagination-controls { display: flex; gap: 15px; justify-content: center; }
-        .btn-ver-mas, .btn-ver-menos { padding: 15px 30px; border: 1px solid var(--black); background: #fff; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
-        .btn-ver-mas:hover, .btn-ver-menos:hover { background: var(--black); color: #fff; }
-
-        /* MODALES */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 2000; padding: 40px 10%; overflow-y: auto; animation: fadeIn 0.3s ease-out; }
-        .close-modal { position: fixed; top: 20px; right: 30px; font-size: 40px; cursor: pointer; font-weight: 200; transition: 0.3s; }
-        .close-modal:hover { transform: rotate(90deg); }
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; animation: slideUp 0.4s ease-out; }
-        th { text-align: left; padding: 15px; border-bottom: 2px solid #000; font-size: 11px; text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        .low { color: #d00; font-weight: bold; }
-
-        /* LIGHTBOX PARA VISOR DE FOTOS */
-        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; justify-content: center; align-items: center; cursor: zoom-out; animation: fadeIn 0.3s ease; }
-        .lightbox img { max-width: 90%; max-height: 90%; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.5); cursor: default; }
-        .close-lightbox { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 50px; font-weight: 200; cursor: pointer; transition: 0.3s; }
-        .close-lightbox:hover { transform: scale(1.1); color: #ccc; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        /* MODAL DETALLE DE STOCK */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; border-radius: 8px; padding: 30px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-title { font-size: 20px; font-weight: 600; margin-bottom: 5px; }
+        .modal-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+        
+        /* LIGHTBOX FOTOS */
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; justify-content: center; align-items: center; cursor: zoom-out; }
+        .lightbox img { max-width: 90%; max-height: 90%; object-fit: contain; }
     </style>
 </head>
 <body>
 
 <div id="loadingScreen">
-    <h1>Cargando Colecciones...</h1>
-    <p style="color: #666; font-size: 11px; margin-top: 10px; letter-spacing: 2px;">Sincronizando inventario principal y showroom</p>
+    <h1>Sincronizando Inventario</h1>
+    <p style="color: #666; font-size: 12px; margin-top: 10px;">Conectando Catálogo Principal y Showroom...</p>
 </div>
 
-<div id="mainContent">
-    <header>
-        <h1>Men's Collection</h1>
-        <p style="font-size: 10px; letter-spacing: 3px; color: #888;">Inventario Premium Organizado</p>
-    </header>
+<header>
+    <div class="logo">Collection <span>ERP</span></div>
+    <div class="search-container">
+        <input type="text" id="searchBox" class="search-bar" placeholder="Buscar modelo, color o ID en todo el inventario..." onkeyup="filterContent()">
+    </div>
+    <div class="header-actions">
+        <button class="btn-view" id="btnToggleView" onclick="toggleView()">Ver Inventario Global</button>
+        <button class="btn-export" onclick="exportToExcel()">Exportar a Excel</button>
+    </div>
+</header>
 
-    <div class="nav-sticky">
+<div id="catalogView">
+    <div class="category-nav">
         <div class="tab-group" id="mainCatTabs">
             <button class="tab-btn active" onclick="setMainCat('Cat 1', this)">Categoría 1 (Seleccionados)</button>
             <button class="tab-btn" onclick="setMainCat('Cat 4', this)">Categoría 4 (Collection)</button>
             <button class="tab-btn" onclick="setMainCat('Showroom', this)">Showroom</button>
+            
+            <div id="subCatTabs">
+                <button class="tab-btn active" onclick="setSubCat('Showroom Básicos', this)">Básicos</button>
+                <button class="tab-btn" onclick="setSubCat('Showroom Tuxedos', this)">Tuxedos</button>
+            </div>
         </div>
-        
-        <div class="tab-group" id="subCatTabs">
-            <button class="tab-btn active" onclick="setSubCat('Showroom Básicos', this)">Básicos</button>
-            <button class="tab-btn" onclick="setSubCat('Showroom Tuxedos', this)">Tuxedos</button>
-        </div>
-
-        <div class="tab-group" id="lineTabs"></div>
-        <input type="text" id="searchBox" class="search-bar" placeholder="Búsqueda rápida por modelo o color..." onkeyup="filterCatalog()">
+        <div class="tab-group" id="lineTabs" style="margin-top: 10px;"></div>
     </div>
 
     <div class="container" id="catalogBody"></div>
 </div>
 
-<div class="modal" id="stockModal">
-    <span class="close-modal" onclick="closeModal()">×</span>
-    <h2 id="mTitle" style="font-weight: 300; font-size: 32px; text-transform: uppercase;"></h2>
-    <p id="mColor" style="color: #666; margin-top: 5px; letter-spacing: 1px; font-size: 14px;"></p>
-    <div id="mTable"></div>
+<div id="tableView">
+    <h2 style="margin-bottom: 5px;">Inventario Global Activo</h2>
+    <p style="color: #666; font-size: 13px; margin-bottom: 20px;">Todos los modelos y ubicaciones en una sola vista.</p>
+    <div class="table-responsive">
+        <table class="master-table" id="masterTable">
+            <thead>
+                <tr>
+                    <th>Línea</th>
+                    <th>Modelo</th>
+                    <th>Color</th>
+                    <th>Talla</th>
+                    <th>ID Stock</th>
+                    <th>Cantidad</th>
+                    <th>Ubicación</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal" id="stockModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="closeModal(true)">&times;</span>
+        <h2 class="modal-title" id="mTitle"></h2>
+        <p class="modal-subtitle" id="mColor"></p>
+        <table class="master-table">
+            <thead>
+                <tr><th>ID STOCK</th><th>TALLA</th><th>CANTIDAD</th><th>UBICACIÓN</th></tr>
+            </thead>
+            <tbody id="mTable"></tbody>
+        </table>
+    </div>
 </div>
 
 <div id="lightboxModal" class="lightbox" onclick="cerrarFoto()">
-    <span class="close-lightbox">&times;</span>
     <img id="lightboxImg" src="" alt="Vista Previa" onclick="event.stopPropagation()">
 </div>
 
@@ -134,11 +168,10 @@
     let rawInventoryData = []; 
     let groupedInventory = [];
     
-    // Variables de navegación
-    let currentCat = 'Cat 1'; // Esta es la categoría real que se dibuja
+    let currentCat = 'Cat 1'; 
     let currentLine = 'Todas';
-    let lastSubCatShowroom = 'Showroom Básicos'; // Memoria del submenú
-    let visibleLimits = {};
+    let lastSubCatShowroom = 'Showroom Básicos';
+    let isTableView = false;
 
     window.onload = async function() {
         const filesToLoad = ['./inventario.xlsx', './showroom.xlsx'];
@@ -153,23 +186,22 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 filesLoaded++;
                 
+                // SEGURIDAD ESTRICTA DE ARCHIVOS:
+                let isShowroomFile = file.includes('showroom');
+
                 workbook.SheetNames.forEach(sheetName => {
                     const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
                     if(sheet.length > 0) {
-                        let catName = 'Cat 1'; 
+                        let catName = ''; 
                         let sName = sheetName.toUpperCase();
                         
-                        // Corrección a Categoría 4
-                        if(sName.includes('COLLECTION') || sName.includes('4') || sName.includes('3') || sName.includes('G')) {
-                            catName = 'Cat 4';
+                        if(isShowroomFile) {
+                            if(sName.includes('TUX')) catName = 'Showroom Tuxedos';
+                            else catName = 'Showroom Básicos';
+                        } else {
+                            if(sName.includes('COLLECTION') || sName.includes('4') || sName.includes('3') || sName.includes('G')) catName = 'Cat 4';
+                            else catName = 'Cat 1';
                         }
-                        if(sName.includes('BASICO') || sName.includes('BÁSICO') || sName.includes('BÁSICOS')) {
-                            catName = 'Showroom Básicos';
-                        }
-                        if(sName.includes('TUXEDO')) {
-                            catName = 'Showroom Tuxedos';
-                        }
-
                         procesarDatos(sheet, catName);
                     }
                 });
@@ -179,7 +211,7 @@
         }
 
         if(filesLoaded === 0) {
-            document.getElementById('loadingScreen').innerHTML = "<h1>Error</h1><p>No se encontraron los archivos inventario.xlsx ni showroom.xlsx en el servidor.</p>";
+            document.getElementById('loadingScreen').innerHTML = "<h1>Error</h1><p>No se encontraron los archivos inventario.xlsx ni showroom.xlsx.</p>";
         } else {
             iniciarCatalogo();
         }
@@ -188,7 +220,7 @@
     function procesarDatos(rows, catAsignada) {
         rows.forEach(row => {
             let id = String(row["ID de stock"] || row["ID STOCK"] || row["ID"] || "N/A");
-            let desc = String(row["Descripción"] || row["DESCRIPCION"] || "").trim().toUpperCase();
+            let desc = String(row["Descripción"] || row["DESCRIPCION"] || row["DESCRIPCION "] || "").trim().toUpperCase();
             let qty = parseInt(row["Cantidad"] || row["CANTIDAD"]) || 1;
 
             if(!desc.includes("TRAJE")) return;
@@ -231,74 +263,65 @@
 
     function iniciarCatalogo() {
         const families = {};
+        
+        // AGRUPACIÓN INTELIGENTE (Une modelos de diferentes categorías)
         rawInventoryData.forEach(p => {
-            const key = p.cat + p.model + p.color;
+            const key = p.model + '||' + p.color; // Llave única global
             if (!families[key]) {
-                families[key] = { cat: p.cat, line: p.line, model: p.model, color: p.color, variants: [] };
+                families[key] = { model: p.model, color: p.color, line: p.line, variants: [] };
             }
-            let existing = families[key].variants.find(v => v.size === p.size && v.id === p.id);
+            let existing = families[key].variants.find(v => v.size === p.size && v.id === p.id && v.cat === p.cat);
             if(existing) existing.stock += p.qty;
-            else families[key].variants.push({ id: p.id, size: p.size, stock: p.qty });
+            else families[key].variants.push({ id: p.id, size: p.size, stock: p.qty, cat: p.cat });
         });
 
         groupedInventory = Object.values(families);
         
         document.getElementById('loadingScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-        
-        // Iniciar en Categoría 1
         setMainCat('Cat 1', document.querySelector('#mainCatTabs button.active'));
+        renderGlobalTable();
     }
 
-    // --- LÓGICA DE PESTAÑAS Y SUB-PESTAÑAS ---
+    /* SISTEMA DE NAVEGACIÓN Y PESTAÑAS */
     function setMainCat(mainCat, btn) {
-        // Actualizar visual de botones principales
-        document.querySelectorAll('#mainCatTabs button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mainCatTabs > button.tab-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
 
         const subTabsDiv = document.getElementById('subCatTabs');
 
         if(mainCat === 'Showroom') {
-            subTabsDiv.style.display = 'flex'; // Mostrar sub-menú
-            // Cargar el último sub-menú activo de showroom
+            subTabsDiv.style.display = 'inline-flex'; 
             setSubCat(lastSubCatShowroom, document.querySelector(`#subCatTabs button.active`));
         } else {
-            subTabsDiv.style.display = 'none'; // Ocultar sub-menú
+            subTabsDiv.style.display = 'none'; 
             currentCat = mainCat;
-            actualizarVistaGlobal();
+            actualizarVista();
         }
     }
 
     function setSubCat(subCat, btn) {
         lastSubCatShowroom = subCat;
         currentCat = subCat;
-
-        // Actualizar visual de botones del sub-menú
         document.querySelectorAll('#subCatTabs button').forEach(b => b.classList.remove('active'));
-        if(btn) {
-            btn.classList.add('active');
-        } else {
-            // Fallback por si se llama sin botón
-            document.querySelectorAll('#subCatTabs button').forEach(b => {
-                if(b.innerText.includes(subCat.replace('Showroom ', ''))) b.classList.add('active');
-            });
-        }
-        actualizarVistaGlobal();
+        if(btn) btn.classList.add('active');
+        actualizarVista();
     }
 
-    function actualizarVistaGlobal() {
-        resetLimitesAnimacion();
-        generarPestanasDinamicas(); 
+    function actualizarVista() {
+        currentLine = 'Todas'; // Reset line filter on cat change
+        generarPestanasLineas(); 
         renderCatalog(); 
     }
 
-    // --- FIN LÓGICA DE PESTAÑAS ---
-
-    function generarPestanasDinamicas() {
+    function generarPestanasLineas() {
         const tabsContainer = document.getElementById('lineTabs');
-        const linesInCurrentCat = [...new Set(groupedInventory.filter(i => i.cat === currentCat).map(i => i.line))];
         
-        let html = `<button class="tab-btn ${currentLine === 'Todas' ? 'active' : ''}" onclick="setLine('Todas')">TODAS</button>`;
+        // Solo mostrar las líneas que tienen inventario en la categoría seleccionada
+        const linesInCurrentCat = [...new Set(groupedInventory
+            .filter(item => item.variants.some(v => v.cat === currentCat))
+            .map(i => i.line))];
+        
+        let html = `<button class="tab-btn ${currentLine === 'Todas' ? 'active' : ''}" onclick="setLine('Todas')">TODAS LAS LÍNEAS</button>`;
         const masterOrder = ['100', '200', '300', '800', 'C67901', 'C', 'G', 'E', 'Variados'];
         
         masterOrder.forEach(l => {
@@ -310,22 +333,15 @@
         });
 
         tabsContainer.innerHTML = html;
-        if (currentLine !== 'Todas' && !linesInCurrentCat.includes(currentLine)) setLine('Todas');
-    }
-
-    function resetLimitesAnimacion() {
-        visibleLimits = {};
-        const masterOrder = ['100', '200', '300', '800', 'C67901', 'C', 'G', 'E', 'Variados'];
-        masterOrder.forEach(l => visibleLimits[l] = 4);
     }
 
     function setLine(l) { 
         currentLine = l; 
-        generarPestanasDinamicas(); 
-        resetLimitesAnimacion();
+        generarPestanasLineas(); 
         renderCatalog(); 
     }
 
+    /* RENDERIZADO DEL CATÁLOGO E-COMMERCE */
     function renderCatalog() {
         const body = document.getElementById('catalogBody');
         body.innerHTML = '';
@@ -334,7 +350,8 @@
         Object.keys(lineNames).forEach(lKey => {
             if (currentLine !== 'Todas' && currentLine !== lKey) return;
             
-            const filtered = groupedInventory.filter(f => f.cat === currentCat && f.line === lKey);
+            // Filtra familias que tengan al menos una variante en la categoría actual y sean de esta línea
+            const filtered = groupedInventory.filter(f => f.line === lKey && f.variants.some(v => v.cat === currentCat));
             
             if (filtered.length > 0) {
                 const section = document.createElement('div');
@@ -343,25 +360,31 @@
                 const grid = document.createElement('div');
                 grid.className = 'catalog-grid';
 
-                let limit = visibleLimits[lKey];
-                let itemsToShow = filtered.slice(0, limit);
-                let hasMore = filtered.length > limit;
+                filtered.forEach(suit => {
+                    // Calculo de stock cruzado
+                    let stockCurrentCat = suit.variants.filter(v => v.cat === currentCat).reduce((sum, v) => sum + v.stock, 0);
+                    let otherVariants = suit.variants.filter(v => v.cat !== currentCat);
+                    let stockOtherCats = otherVariants.reduce((sum, v) => sum + v.stock, 0);
+                    
+                    let crossTagHTML = '';
+                    if(stockOtherCats > 0) {
+                        let otherLocations = [...new Set(otherVariants.map(v => v.cat.replace('Showroom ', 'SR ')))].join(', ');
+                        crossTagHTML = `<div class="cross-location-badge">También en ${otherLocations} (+${stockOtherCats} pz)</div>`;
+                    }
 
-                itemsToShow.forEach(suit => {
-                    const total = suit.variants.reduce((a, b) => a + b.stock, 0);
                     const card = document.createElement('div');
                     card.className = 'suit-card';
-                    
                     let imagePath = `./fotos/${suit.model}.jpg`;
 
                     card.innerHTML = `
-                        <div class="stock-tag">${total} PZAS</div>
-                        <div class="image-box">
-                            <img src="${imagePath}" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x600?text=COLLECTION';" alt="${suit.model}" onclick="abrirFoto(this.src)">
+                        <div class="image-box" onclick="abrirFoto('${imagePath}')">
+                            <div class="badge-qty">${stockCurrentCat} Disponibles</div>
+                            ${crossTagHTML}
+                            <img src="${imagePath}" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x600?text=PREMIUM+SUIT';">
                         </div>
                         <div class="suit-info">
-                            <h3>${suit.model}</h3>
-                            <p>${suit.color}</p>
+                            <h3>Traje Modelo ${suit.model}</h3>
+                            <p class="color-desc">Color ${suit.color}</p>
                             <button class="action-btn" onclick="verStock('${suit.model}', '${suit.color}')">Ver Disponibilidad</button>
                         </div>
                     `;
@@ -369,29 +392,86 @@
                 });
                 
                 section.appendChild(grid);
-
-                if (hasMore || limit > 4) {
-                    const controlDiv = document.createElement('div');
-                    controlDiv.className = 'pagination-controls';
-                    if (hasMore) {
-                        const btnMore = document.createElement('button');
-                        btnMore.className = 'btn-ver-mas';
-                        btnMore.innerText = `Ver más modelos (${filtered.length - limit})`;
-                        btnMore.onclick = () => { visibleLimits[lKey] += 8; renderCatalog(); };
-                        controlDiv.appendChild(btnMore);
-                    }
-                    if (limit > 4) {
-                        const btnLess = document.createElement('button');
-                        btnLess.className = 'btn-ver-menos';
-                        btnLess.innerText = `Mostrar menos`;
-                        btnLess.onclick = () => { visibleLimits[lKey] = 4; renderCatalog(); };
-                        controlDiv.appendChild(btnLess);
-                    }
-                    section.appendChild(controlDiv);
-                }
                 body.appendChild(section);
             }
         });
+    }
+
+    /* RENDERIZADO DE LA TABLA GLOBAL */
+    function renderGlobalTable() {
+        const tBody = document.getElementById('tableBody');
+        tBody.innerHTML = '';
+        
+        rawInventoryData.forEach(item => {
+            let badgeClass = item.cat.includes('1') ? 'loc-cat1' : item.cat.includes('4') ? 'loc-cat4' : 'loc-show';
+            
+            tBody.innerHTML += `
+                <tr class="table-row">
+                    <td><strong>${item.line}</strong></td>
+                    <td>${item.model}</td>
+                    <td style="color: #666;">${item.color}</td>
+                    <td>${item.size}</td>
+                    <td style="color: #888;">${item.id}</td>
+                    <td><strong>${item.qty} pz</strong></td>
+                    <td><span class="loc-badge ${badgeClass}">${item.cat}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    function toggleView() {
+        isTableView = !isTableView;
+        const btn = document.getElementById('btnToggleView');
+        if(isTableView) {
+            document.getElementById('catalogView').style.display = 'none';
+            document.getElementById('tableView').style.display = 'block';
+            btn.innerText = "Ver Catálogo de Fotos";
+        } else {
+            document.getElementById('catalogView').style.display = 'block';
+            document.getElementById('tableView').style.display = 'none';
+            btn.innerText = "Ver Inventario Global";
+        }
+    }
+
+    /* FILTROS Y BÚSQUEDA MASTER */
+    function filterContent() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        
+        if(isTableView) {
+            document.querySelectorAll('.table-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        } else {
+            document.querySelectorAll('.suit-card').forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+            });
+        }
+    }
+
+    /* MODAL DE STOCK COMPLETO Y FOTOS */
+    function verStock(m, c) {
+        const suit = groupedInventory.find(f => f.model === m && f.color === c);
+        document.getElementById('mTitle').innerText = "Modelo " + suit.model;
+        document.getElementById('mColor').innerText = suit.color;
+        
+        let html = '';
+        suit.variants.forEach(v => {
+            let badgeClass = v.cat.includes('1') ? 'loc-cat1' : v.cat.includes('4') ? 'loc-cat4' : 'loc-show';
+            html += `<tr>
+                <td style="color:#888;">${v.id}</td>
+                <td><strong>${v.size}</strong></td>
+                <td>${v.stock} pz</td>
+                <td><span class="loc-badge ${badgeClass}">${v.cat}</span></td>
+            </tr>`;
+        });
+        
+        document.getElementById('mTable').innerHTML = html;
+        document.getElementById('stockModal').style.display = 'flex';
+    }
+
+    function closeModal(force) { 
+        if(force === true) document.getElementById('stockModal').style.display = 'none';
+        else if (event.target.id === 'stockModal') document.getElementById('stockModal').style.display = 'none';
     }
 
     function abrirFoto(src) {
@@ -403,25 +483,22 @@
         document.getElementById('lightboxModal').style.display = 'none';
     }
 
-    function verStock(m, c) {
-        const suit = groupedInventory.find(f => f.model === m && f.color === c);
-        document.getElementById('mTitle').innerText = suit.model;
-        document.getElementById('mColor').innerText = suit.color;
-        let t = `<table><tr><th>ID STOCK</th><th>TALLA</th><th>CANTIDAD</th></tr>`;
-        suit.variants.forEach(v => {
-            t += `<tr><td>${v.id}</td><td>${v.size}</td><td class="${v.stock < 2 ? 'low' : ''}">${v.stock} PZ</td></tr>`;
-        });
-        document.getElementById('mTable').innerHTML = t + `</table>`;
-        document.getElementById('stockModal').style.display = 'block';
-    }
+    /* EXPORTACIÓN A EXCEL MÁGICA */
+    function exportToExcel() {
+        let exportData = rawInventoryData.map(item => ({
+            "Categoría / Ubicación": item.cat,
+            "Línea": item.line,
+            "Modelo": item.model,
+            "Color": item.color,
+            "Talla": item.size,
+            "ID Stock": item.id,
+            "Piezas Existentes": item.qty
+        }));
 
-    function closeModal() { document.getElementById('stockModal').style.display = 'none'; }
-
-    function filterCatalog() {
-        const q = document.getElementById('searchBox').value.toLowerCase();
-        document.querySelectorAll('.suit-card').forEach(c => {
-            c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';
-        });
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventario_Completo");
+        XLSX.writeFile(wb, "Reporte_Inventario_Collection.xlsx");
     }
 </script>
 </body>
