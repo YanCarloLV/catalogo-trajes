@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Maestro de Etiquetas - Luciano Ferreti</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; padding: 0; margin: 0; color: #333; display: flex; flex-direction: column; align-items: center; }
+        
+        /* SISTEMA DE PESTAÑAS (TABS) */
+        .tabs-container { width: 100%; background-color: #1f2937; display: flex; justify-content: center; padding-top: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); margin-bottom: 30px; flex-wrap: wrap;}
+        .tab-btn { background-color: transparent; border: none; color: #9ca3af; padding: 15px 30px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s; border-bottom: 4px solid transparent; }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: white; border-bottom: 4px solid #0ea5e9; }
+        .tab-content { display: none; width: 100%; max-width: 1100px; padding: 0 20px; box-sizing: border-box; flex-direction: column; align-items: center;}
+        .tab-content.active { display: flex; }
+
+        /* ESTILOS GLOBALES COMPARTIDOS */
+        .card { background: #ffffff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 100%; box-sizing: border-box; margin-bottom: 20px; }
+        h2 { color: #1f2937; margin-top: 0; }
+        .instrucciones { background-color: #e0f2fe; padding: 15px; border-radius: 5px; font-size: 0.95rem; margin-bottom: 20px; border-left: 5px solid #0ea5e9; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; color: #4b5563;}
+        select, input[type="file"], input[type="text"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 5px; box-sizing: border-box; }
+        .btn { color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; transition: background-color 0.2s;}
+        .btn-imprimir { background-color: #059669; padding: 15px;}
+        .btn-imprimir:hover { background-color: #047857; }
+        .btn-descargar { background-color: #4b5563; margin-top: 10px; }
+        .btn-descargar:hover { background-color: #374151; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+        th { background-color: #f9fafb; color: #1f2937;}
+        
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        
+        .resultados-container { display: flex; gap: 20px; width: 100%; flex-wrap: wrap; box-sizing: border-box;}
+        .panel-tabla { flex: 2; min-width: 500px; }
+        .panel-preview { flex: 1; min-width: 300px; }
+        
+        .preview-box { text-align: center; margin-top: 15px; padding: 20px; background-color: #f9fafb; border: 2px dashed #d1d5db; border-radius: 5px; min-height: 250px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .preview-box img { max-width: 100%; height: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: none; margin-bottom: 15px; background-color: white; }
+        
+        .loader { font-size: 0.9rem; color: #6b7280; display: none; }
+        .carousel-controls { display: none; width: 100%; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .btn-nav { background-color: #e5e7eb; color: #374151; border: 1px solid #d1d5db; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-nav:hover:not(:disabled) { background-color: #d1d5db; }
+        .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; }
+        .contador { font-weight: bold; color: #4b5563; }
+        
+        .seccion-impresion { margin-top: 25px; border-top: 2px dashed #d1d5db; padding-top: 20px; }
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 5px; font-size: 0.85rem; margin-top: 5px; font-weight: bold; }
+        
+        textarea { width: 100%; height: 150px; margin-top: 10px; padding: 10px; font-family: monospace; border: 1px solid #d1d5db; border-radius: 5px; resize: vertical; box-sizing: border-box; }
+
+        .paste-scroll::-webkit-scrollbar { width: 8px; }
+        .paste-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .paste-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .paste-scroll::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* --- ESTILOS BUSCADOR INTELIGENTE --- */
+        .search-bar-monarch { width: 100%; padding: 15px 20px; border: 2px solid #d1d5db; border-radius: 10px; font-size: 1.1rem; outline: none; margin-bottom: 20px; transition: 0.3s; box-sizing: border-box; background: #f9fafb; color: #1f2937; }
+        .search-bar-monarch:focus { border-color: #0ea5e9; background: white; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2); }
+        .catalogo-grid-monarch { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px; }
+        
+        .producto-card-monarch { border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; background: #fff; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; }
+        .producto-card-monarch:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-color: #0ea5e9; }
+        
+        /* ESTADO SELECCIONADO */
+        .producto-card-monarch.seleccionado { background-color: #eff6ff; border-color: #3b82f6; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1); }
+        
+        .badge-sku { font-size: 0.75rem; color: #6b7280; background: #f3f4f6; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; font-weight: bold; width: max-content; }
+        .producto-card-monarch.seleccionado .badge-sku { background: #dbeafe; color: #1e40af; }
+        
+        .btn-add-monarch { width: 100%; padding: 10px; background: #f3f4f6; border: none; border-radius: 8px; font-weight: bold; color: #1f2937; cursor: pointer; transition: 0.2s; margin-top: auto; }
+        .btn-add-monarch:hover { background: #0ea5e9; color: white; }
+        .producto-card-monarch.seleccionado .btn-add-monarch { background: #10b981; color: white; }
+        .producto-card-monarch.seleccionado .btn-add-monarch:hover { background: #059669; }
+
+        /* INPUTS TRANSPARENTES PARA TABLAS */
+        .input-tabla { width: 100%; padding: 5px; border: 1px solid transparent; background-color: transparent; border-radius: 4px; font-family: inherit; font-size: 0.85rem; color: inherit; transition: all 0.2s; box-sizing: border-box; }
+        .input-tabla:focus { border: 1px solid #0ea5e9; background-color: #fff; color: #1f2937; outline: none; }
+        .input-tabla:hover { background-color: #f9fafb; border: 1px solid #e5e7eb; cursor: text; }
+
+    </style>
+</head>
+<body>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="abrirPestana('tab-monarch', this)">🏷️ 1. MONARCH NYLON</button>
+        <button class="tab-btn" onclick="abrirPestana('tab-recibo', this)">🧾 2. RECIBO ODOO</button>
+        <button class="tab-btn" onclick="abrirPestana('tab-tienda', this)">🛍️ 3. TIENDA COLLECTION</button>
+    </div>
+
+    <!-- ==========================================
+         MÓDULO 1: MONARCH (NYLON)
+         ========================================== -->
+    <div id="tab-monarch" class="tab-content active">
+        <div class="card">
+            <h2>🏷️ Sistema Maestro: Etiquetas de Nylon (38x66 mm)</h2>
+            
+            <!-- PANEL DE MAQUILA (PLEGABLE) -->
+            <details style="background: #f8fafc; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
+                <summary style="font-weight: bold; cursor: pointer; color: #334155; font-size: 1.05rem;">
+                    ⚙️ Personalizar Datos de Empresa (Para Maquilas)
+                </summary>
+                <div class="grid-3" style="margin-top: 15px; gap: 10px;">
+                    <div><label>Marca:</label><input type="text" id="cfg_marca" value="LUCIANO FERRETI" onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>Razón Social 1:</label><input type="text" id="cfg_rs1" value="MEN'S INTERNATIONAL" onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>Razón Social 2:</label><input type="text" id="cfg_rs2" value="COLLECTION, S.A. DE C.V." onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>Dirección 1:</label><input type="text" id="cfg_dir1" value="AVE. VASCONCELOS 205-A" onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>Dirección 2:</label><input type="text" id="cfg_dir2" value="PTE COL. DEL VALLE, SAN PEDRO" onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>Dirección 3:</label><input type="text" id="cfg_dir3" value="GARZA GARCIA N.L. C.P. 66220" onchange="generarEtiquetasMonarch()"></div>
+                    <div><label>RFC:</label><input type="text" id="cfg_rfc" value="RFC: MIC100415435" onchange="generarEtiquetasMonarch()"></div>
+                </div>
+            </details>
+
+            <div class="grid-3" style="align-items: end;">
+                <div class="form-group" style="margin: 0;">
+                    <label>1. Origen de Fabricación:</label>
+                    <select id="origenSelect_monarch" onchange="generarEtiquetasMonarch()">
+                        <option value="HECHO EN MEXICO POR:">🇲🇽 HECHO EN MÉXICO</option>
+                        <option value="HECHO EN ITALIA POR:">🇮🇹 HECHO EN ITALIA</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label>2. Composición del Forro:</label>
+                    <input type="text" id="inputForro_monarch" value="100% POLYESTER" placeholder="Deja vacío para omitir forro" onkeyup="generarEtiquetasMonarch()"/>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; background: #e0f2fe; padding: 10px; border-radius: 5px; border: 1px solid #0ea5e9; margin: 0;">
+                    <input type="checkbox" id="tiendaCollection_monarch" style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;" onchange="generarEtiquetasMonarch()">
+                    <label for="tiendaCollection_monarch" style="margin: 0; cursor: pointer; color: #0369a1; font-weight: bold;">🌍 MODO INGLÉS</label>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DE CARGA DE DATOS -->
+            <div id="contenedorSubida_monarch" style="margin-top: 25px; padding-top: 20px; border-top: 2px dashed #d1d5db;">
+                
+                <div style="background: #ecfdf5; border: 2px dashed #10b981; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <label style="font-size: 1.1rem; color: #059669; font-weight: bold; display: block; margin-bottom: 10px;">📥 3. Pega tu lista Odoo directo (Cruce Inteligente):</label>
+                    <div id="zonaPaste_monarch" tabindex="0" style="background: #fff; border: 1px solid #9ca3af; border-radius: 5px; height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; color: #6b7280; font-style: italic;" onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.2)';" onblur="this.style.borderColor='#9ca3af'; this.style.boxShadow='none';">
+                        Haz clic aquí y presiona Ctrl+V para pegar (Col A: [SKU] Descripción | Col B: Cantidad)
+                    </div>
+                </div>
+
+                <div class="form-group" style="text-align: center;">
+                    <p style="margin-bottom: 10px; font-weight: bold; color: #4b5563;">Ó Cargar BD Manualmente (.xlsx):</p>
+                    <input type="file" id="excelBD_monarch" accept=".xlsx, .xls" style="border: 1px solid #d1d5db; background: #fff; padding: 10px; cursor: pointer;" />
+                </div>
+            </div>
+
+            <!-- BUSCADOR INTELIGENTE -->
+            <div id="seccionBuscador_monarch" style="display: none; margin-top: 20px;">
+                <input type="text" id="buscador_monarch" class="search-bar-monarch" placeholder="🔍 Buscar modelo, color, talla o SKU..." oninput="filtrarCatalogoMonarch()">
+                <div id="catalogo_monarch" class="catalogo-grid-monarch"></div>
+            </div>
+        </div>
+
+        <div id="resultadosPrincipal_monarch" class="resultados-container" style="display: none;">
+            <div class="card panel-tabla">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">🛒 Trajes Listos para Imprimir:</h3>
+                    <small style="color: #6b7280;">(Haz clic en Modelo, Color o Tela para editar)</small>
+                </div>
+                <div style="overflow-x: auto; max-height: 400px;">
+                    <table id="dataTable_monarch">
+                         <thead style="position: sticky; top: 0; background-color: #f9fafb; z-index: 10;">
+                            <tr>
+                                <th style="width: 10%;">Talla</th>
+                                <th style="width: 30%;">Modelo ✏️</th>
+                                <th style="width: 20%;">Color ✏️</th>
+                                <th style="width: 20%;">Tela ✏️</th>
+                                <th style="width: 5%; text-align: center;">Cant.</th>
+                                <th style="width: 5%; text-align: center;">Chaleco</th>
+                                <th style="width: 5%; text-align: center;">Total</th>
+                                <th style="width: 5%; text-align: center;">X</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody_monarch"></tbody>
+                    </table>
+                </div>
+
+                <div class="seccion-impresion">
+                    <h2>🖧 Enviar a Impresora Monarch (LAN)</h2>
+                    <div class="form-group">
+                        <label>Dirección IP de la impresora Monarch:</label>
+                        <input type="text" id="ipImpresora_monarch" placeholder="Ejemplo: 192.168.1.50" />
+                    </div>
+                    <button class="btn btn-imprimir" onclick="imprimirPorRed_monarch()">🖨️ IMPRIMIR LOTE NYLON</button>
+                </div>
+            </div>
+
+            <div class="card panel-preview">
+                <h2>👁️ Vista Previa</h2>
+                <div class="preview-box">
+                    <p id="placeholderText_monarch" style="color: #9ca3af;">Agrega trajes para previsualizar</p>
+                    <p id="loaderText_monarch" class="loader">Generando diseño...</p>
+                    <img id="previewImg_monarch" alt="Vista previa etiqueta de nylon" />
+                    <div id="carouselControls_monarch" class="carousel-controls">
+                        <button class="btn-nav" id="btnPrev_monarch" onclick="etiquetaAnterior_monarch()">&#8592;</button>
+                        <span id="textoContador_monarch" class="contador">1 de X</span>
+                        <button class="btn-nav" id="btnNext_monarch" onclick="siguienteEtiqueta_monarch()">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÓDULO 2 Y 3 (Sin cambios, para no hacer el código inmenso en la respuesta visual. Asumimos que los mantienes idénticos a tu versión anterior) -->
+    <!-- SI LOS BORRAS EN TU CÓDIGO, CÓPIALOS DE LA VERSIÓN ANTERIOR. SOLO SUSTITUIMOS EL MODULO 1 Y EL SCRIPT -->
+    
+    <script>
+        // =========================================================================
+        // CONFIGURACIÓN DE GITHUB (Carga Automática de Base de Datos Odoo)
+        // =========================================================================
+        // PEGA AQUÍ TU ENLACE RAW DE GITHUB (ej. https://raw.githubusercontent.com/usuario/repo/main/odoo.xlsx)
+        const GITHUB_EXCEL_URL = ""; 
+
+        function abrirPestana(idTab, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(idTab).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        window.onload = function() {
+            const ipNylon = localStorage.getItem('zebraIP_Nylon');
+            if(ipNylon) document.getElementById('ipImpresora_monarch').value = ipNylon;
+
+            // INTENTAR CARGAR DB DE GITHUB AUTOMÁTICAMENTE
+            if(GITHUB_EXCEL_URL && GITHUB_EXCEL_URL.startsWith('http')) {
+                document.getElementById('contenedorSubida_monarch').innerHTML = '<h3 style="color: #0ea5e9; text-align: center;">☁️ Descargando Base de Datos desde GitHub...</h3>';
+                fetch(GITHUB_EXCEL_URL)
+                    .then(res => res.arrayBuffer())
+                    .then(data => {
+                        const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
+                        const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
+                        const filas = XLSX.utils.sheet_to_json(primeraHoja);
+                        procesarBaseDatosOdoo(filas);
+                    })
+                    .catch(err => {
+                        console.error("Error al cargar GitHub", err);
+                        alert("No se pudo cargar la BD de GitHub. Usa la subida manual.");
+                        location.reload(); // Recarga para volver a mostrar botones manuales
+                    });
+            }
+        };
+
+        const traducciones = {
+            "NEGRO": "BLACK", "MARINO": "NAVY", "GRIS": " GREY OXFORD", "GRIS MEDIO": "LIGHT GREY", "VERDE HUNTER": "HUNTER GREEN", "VERDE": "GREEN", "AZUL NOCHE": "BLUE NIGHT", "AZUL REY": "ROYAL BLUE", "AZUL FRANCIA": "BLUE FRANCE", "ROJO": "RED", "VINO": "BURGUNDY", "BLANCO": "WHITE", "CAFE": "BROWN", "BEIGE": "BEIGE", "MOSTAZA": "MUSTARD", "POLIESTER": "POLYESTER", "POLIÉSTER": "POLYESTER", "VISCOSA": "VISCOSE", "LANA": "WOOL", "ALGODON": "COTTON", "ALGODÓN": "COTTON", "ELASTANO": "ELASTANE", "SPANDEX": "SPANDEX", "LINO": "LINEN", "SEDA": "SILK"
+        };
+        function traducir(texto) {
+            let resultado = texto.toUpperCase();
+            for (let [es, en] of Object.entries(traducciones)) {
+                let regex = new RegExp(`\\b${es}\\b`, 'gi');
+                resultado = resultado.replace(regex, en);
+            }
+            return resultado;
+        }
+
+        let codigoZPLFinal_monarch = '';
+        let listaEtiquetas_monarch = []; 
+        let indiceActual_monarch = 0;
+        let datosTabla_monarch = [];
+        let catalogoOdooGlobal = []; 
+
+        let objetoSimboloEnMemoria = { "x": 38, "gfa": "^GFA,2100,2100,28,00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00010000000000000000000000000000000000000000000000000000\n00010000000000400000000000000000000000000000000000000000\n00000000000000C00000003000000000000000000000000000000000\n00010000000000400000003000000000000000000000000000000000\n00000000000000C00000004800000000000000000000000070000000\n0000A000000000C0000000CC000000000000000000000007BF800000\n0000F01E006003C0000000C6000000001FFFFFC00000001C00E00000\n0000F83B80E007C000000186000000001FFFFFF00000003800300000\n0000EC60C10C07C00000010300000000000005F80000007000080000\n000FCFC07E070F8000000301800000000000001C000000C000040000\n000FC00000007BF800E00200800000000000000C0000018000020000\n000FE000000003FC00400600C01800000000000C0000030000030000\n0003F000000003F800180400C03800000000000C00000301FC010000\n00007C00000007E0000E0C0060E000000000000E00000601FE008000\n00007F0000003F800003080031C00000000000060000040183008000\n000067E00001FF000000F0003F0000000000000600000C018180C000\n000060F80007E200000070001E00000000000006000008018180C000\n0000603E001F82000000380018000000007FFFBF00000C018180C000\n0000601F80FE020000007E007C00000003FFFFFF80000C0183804000\n00002003E3F0060000004381C60000001E00000380000C01FF004000\n00003000FFC006000000C1C3060000003800000380000801FC006000\n000020007F0004000000C06E0300000070000001800008018000E000\n00003001FF8004000001803C01800000E000000180000C018000C000\n00003007E7E00C000001007E01800001C000000180000C018000C000\n0000101F00FC0C00000300E300C0000383C0C0E0800004018000C000\n000018FC001F0C0000020381C040000303E1E0F0800006018000C000\n00001FF00007CC0000060700F060000703C3E1F0C000060180008000\n00001F800003FC00000C0C003820000603C1E0F0C000030000018000\n00003E000000FC00000C38000E30000C0180C060C000038000030000\n0001F80000001F000018E0000318001C000000004000018000070000\n0007D80000001FC00019C00001D800180000000060000040000E0000\n000F880000001BE000370000007C00100000000060000060001C0000\n00060C00000018C0007E0000003C0038000000006000003C00300000\n00000FFFFFFFF00000780000000C003FFFFFFFFFF000000E01C00000\n00000005FFFFF000007000000007000000107BFFE0000001FF000000\n000000000000000000FFFFFFFFFF800000000000000000001C000000\n0000000000000000007FFFFFFFFF0000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000\n00000000000000000000000000000000000000000000000000000000" };
+
+        document.getElementById('excelBD_monarch').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('contenedorSubida_monarch').innerHTML = '<h3 style="color: #0ea5e9; text-align: center;">⏳ Analizando BD Manual...</h3>';
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
+                const filas = XLSX.utils.sheet_to_json(primeraHoja);
+                procesarBaseDatosOdoo(filas);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // ===============================================
+        // PARSER DE ODOO (Reutilizable para Excel o Paste)
+        // ===============================================
+        function extraerDatosOdoo(nombreOdoo, descOdoo, sku) {
+            let matchTalla = nombreOdoo.match(/\((.*?)\)/);
+            let tallaCalculada = "ND"; let tallaChaleco = "ND"; 
+            if(matchTalla) {
+                let textoTalla = matchTalla[1].toUpperCase();
+                let numeroMatch = textoTalla.match(/(\d+)/);
+                let numero = numeroMatch ? parseInt(numeroMatch[1]) : 0;
+                let letra = 'R'; 
+                if(textoTalla.includes('CORTO') || textoTalla.includes('SHORT')) letra = 'C'; 
+                else if(textoTalla.includes('LARGO') || textoTalla.includes('LONG')) letra = 'L';
+                if(numero > 0) {
+                    tallaCalculada = `${numero}${letra}/${numero - 6}`;
+                    tallaChaleco = `${numero}${letra}`; 
+                }
+            }
+
+            let modelo = "ND"; let color = "ND";
+            let nombreLimpio = nombreOdoo.replace(/\[.*?\]/, '').replace(/\(.*?\)/, '').trim();
+            nombreLimpio = nombreLimpio.replace(/^TRAJE\s+/i, '').trim();
+            nombreLimpio = nombreLimpio.replace(/\s+(MF|SLIM|SKINNY|CLASSIC)$/i, '').trim();
+
+            let matchEspecial = nombreLimpio.match(/^(FRACC\s+[^\s]+|JACKET\s+[^\s]+|[^\s]+)\s+(.*)$/i);
+            if(matchEspecial) { 
+                modelo = matchEspecial[1].toUpperCase(); 
+                color = matchEspecial[2].toUpperCase(); 
+            } else if (nombreLimpio !== "") { modelo = nombreLimpio.toUpperCase(); }
+
+            let tela = "NO ESPECIFICADA";
+            let matchTela = descOdoo.match(/(\d{1,3}%.*?)(?=\.|$)/i);
+            if(matchTela) tela = matchTela[1].toUpperCase().trim();
+
+            return { modelo, color, tallaCalculada, tallaChaleco, tela };
+        }
+
+        function procesarBaseDatosOdoo(filas) {
+            catalogoOdooGlobal = [];
+            let idUnico = 0;
+            filas.forEach(fila => {
+                let nombreOdoo = fila['Nombre en pantalla'] || fila['NOMBRE EN PANTALLA'] || '';
+                let descOdoo = fila['Descripción de ventas'] || fila['DESCRIPCIÓN DE VENTAS'] || '';
+                let sku = fila['SKU'] || fila['sku'] || 'S/N';
+                if (!nombreOdoo || nombreOdoo.trim() === '') return;
+
+                let extraido = extraerDatosOdoo(nombreOdoo, descOdoo, sku);
+                catalogoOdooGlobal.push({ 
+                    id: "producto_" + idUnico++, sku: sku, 
+                    modelo: extraido.modelo, color: extraido.color, 
+                    tallaCalculada: extraido.tallaCalculada, tallaChaleco: extraido.tallaChaleco, tela: extraido.tela 
+                });
+            });
+
+            document.getElementById('contenedorSubida_monarch').style.display = 'none';
+            document.getElementById('seccionBuscador_monarch').style.display = 'block';
+            document.getElementById('resultadosPrincipal_monarch').style.display = 'flex';
+            renderizarCatalogoMonarch();
+        }
+
+        // ===============================================
+        // PEGADO DIRECTO EN MÓDULO 1 (Cruce con BD)
+        // ===============================================
+        document.getElementById('zonaPaste_monarch').addEventListener('paste', function(e) {
+            e.preventDefault();
+            if(catalogoOdooGlobal.length === 0) { alert("⚠️ Primero carga la Base de Datos Odoo para poder cruzar información."); return; }
+            
+            let texto = (e.clipboardData || window.clipboardData).getData('text');
+            let filas = texto.split('\n');
+            let agregados = 0;
+
+            filas.forEach(fila => {
+                let cols = fila.split('\t');
+                if(cols.length >= 2 && cols[0].trim() !== '') {
+                    let nombrePasted = cols[0].trim();
+                    let cantPasted = parseInt(cols[1]) || 1;
+                    
+                    // Extraer SKU entre corchetes
+                    let matchSku = nombrePasted.match(/\[(.*?)\]/);
+                    let sku = matchSku ? matchSku[1] : 'S/N';
+                    
+                    let prodExistente = catalogoOdooGlobal.find(p => p.sku === sku && sku !== 'S/N');
+                    
+                    if(prodExistente) {
+                        // Si existe en BD, usamos sus datos exactos
+                        agregarATablaMonarch(prodExistente.id, cantPasted);
+                        agregados++;
+                    } else {
+                        // Si no existe (o no tiene SKU), lo forzamos extrayendo datos del texto pegado
+                        let extraido = extraerDatosOdoo(nombrePasted, "", sku);
+                        let nuevoId = "custom_" + Date.now() + Math.floor(Math.random()*1000);
+                        datosTabla_monarch.push({
+                            id: nuevoId, sku: sku, tallaCalculada: extraido.tallaCalculada, tallaChaleco: extraido.tallaChaleco,
+                            modelo: extraido.modelo, color: extraido.color, tela: extraido.tela, cantidad: cantPasted, llevaChaleco: false 
+                        });
+                        agregados++;
+                    }
+                }
+            });
+
+            if(agregados > 0) {
+                generarEtiquetasMonarch();
+                renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value);
+                alert(`✅ Se detectaron y agregaron ${agregados} trajes a la lista de impresión.`);
+            }
+        });
+
+        // ===============================================
+        // LÓGICA DE INTERFAZ Y TABLA
+        // ===============================================
+        function renderizarCatalogoMonarch(filtro = '') {
+            const grid = document.getElementById('catalogo_monarch');
+            grid.innerHTML = '';
+            
+            const terminos = filtro.toLowerCase().trim().split(/\s+/);
+            const filtrados = catalogoOdooGlobal.filter(p => {
+                const strBusqueda = `${p.modelo} ${p.color} ${p.tallaCalculada} ${p.sku}`.toLowerCase();
+                if (terminos.length === 1 && terminos[0] === "") return true;
+                return terminos.every(termino => strBusqueda.includes(termino));
+            });
+
+            const aMostrar = filtrados.slice(0, 60);
+            if(aMostrar.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#6b7280; font-weight:bold;">No se encontraron trajes.</div>';
+                return;
+            }
+
+            aMostrar.forEach(p => {
+                // VERIFICAR SI YA ESTÁ SELECCIONADO
+                const enLista = datosTabla_monarch.find(t => t.id === p.id);
+                const esSeleccionado = enLista ? true : false;
+                const claseCard = esSeleccionado ? 'producto-card-monarch seleccionado' : 'producto-card-monarch';
+                const textoBoton = esSeleccionado ? `✅ Agregado (${enLista.cantidad})` : `➕ Agregar a Lista`;
+
+                const card = document.createElement('div');
+                card.className = claseCard;
+                card.innerHTML = `
+                    <div class="badge-sku">${p.sku}</div>
+                    <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1f2937;">${p.modelo}</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.85rem; color: #4b5563;">${p.color} | Talla: <strong style="color: #0ea5e9; font-size: 1rem;">${p.tallaCalculada}</strong></p>
+                    <button class="btn-add-monarch" onclick="agregarATablaMonarch('${p.id}')">${textoBoton}</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filtrarCatalogoMonarch() {
+            renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value);
+        }
+
+        function agregarATablaMonarch(id, cantidadExtra = 1) {
+            const prod = catalogoOdooGlobal.find(p => p.id === id);
+            if(!prod) return;
+
+            const index = datosTabla_monarch.findIndex(p => p.id === id);
+            if(index > -1) {
+                datosTabla_monarch[index].cantidad += cantidadExtra;
+            } else {
+                datosTabla_monarch.push({
+                    id: prod.id, sku: prod.sku, tallaCalculada: prod.tallaCalculada, tallaChaleco: prod.tallaChaleco,
+                    modelo: prod.modelo, color: prod.color, tela: prod.tela, cantidad: cantidadExtra, llevaChaleco: false 
+                });
+            }
+            generarEtiquetasMonarch();
+            renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value); // Actualiza colores
+        }
+
+        function actualizarDatoLista(index, campo, valor) {
+            datosTabla_monarch[index][campo] = valor;
+            generarEtiquetasMonarch(); // Recalcula ZPL y re-dibuja tabla
+        }
+
+        function actualizarCantMonarch(index, cant) {
+            let valor = parseInt(cant);
+            if(isNaN(valor) || valor < 1) valor = 1;
+            datosTabla_monarch[index].cantidad = valor;
+            generarEtiquetasMonarch();
+            renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value);
+        }
+
+        function eliminarFilaMonarch(index) {
+            datosTabla_monarch.splice(index, 1);
+            generarEtiquetasMonarch();
+            renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value);
+        }
+
+        function toggleChalecoMonarch(index, valor) {
+            datosTabla_monarch[index].llevaChaleco = valor;
+            generarEtiquetasMonarch();
+        }
+
+        // ===============================================
+        // GENERACIÓN ZPL (Con campos de Maquila editables)
+        // ===============================================
+        function generarEtiquetasMonarch() {
+            const tbody = document.getElementById('tableBody_monarch');
+            tbody.innerHTML = '';
+            codigoZPLFinal_monarch = ''; listaEtiquetas_monarch = []; indiceActual_monarch = 0;
+            
+            if(datosTabla_monarch.length === 0) {
+                document.getElementById('carouselControls_monarch').style.display = 'none';
+                document.getElementById('previewImg_monarch').style.display = 'none';
+                document.getElementById('placeholderText_monarch').style.display = 'block';
+                return;
+            }
+
+            let origenRaw = document.getElementById('origenSelect_monarch').value;
+            let forroGlobal = document.getElementById('inputForro_monarch').value.toUpperCase().trim();
+            let modoIngles = document.getElementById('tiendaCollection_monarch').checked;
+            
+            // LECTURA DE VARIABLES MAQUILA
+            let cfgMarca = document.getElementById('cfg_marca').value.toUpperCase();
+            let cfgRS1 = document.getElementById('cfg_rs1').value.toUpperCase();
+            let cfgRS2 = document.getElementById('cfg_rs2').value.toUpperCase();
+            let cfgDir1 = document.getElementById('cfg_dir1').value.toUpperCase();
+            let cfgDir2 = document.getElementById('cfg_dir2').value.toUpperCase();
+            let cfgDir3 = document.getElementById('cfg_dir3').value.toUpperCase();
+            let cfgRFC = document.getElementById('cfg_rfc').value.toUpperCase();
+
+            let textoModelo = modoIngles ? "MODEL:" : "MODELO:";
+            let textoTela = "TELA:"; 
+            let textoForro = modoIngles ? "FORRO:" : "FORRO:";
+            let origenZPL = origenRaw;
+            
+            if(modoIngles) {
+                if(origenRaw.includes("MEXICO")) origenZPL = "MADE IN MEXICO :";
+                if(origenRaw.includes("ITALIA")) origenZPL = "MADE IN ITALY :";
+                forroGlobal = traducir(forroGlobal);
+            }
+
+            let etiquetasProcesadas = 0;
+
+            datosTabla_monarch.forEach((dato, index) => {
+                let colorImprimir = modoIngles ? traducir(dato.color) : dato.color;
+                let telaImprimir = modoIngles ? traducir(dato.tela) : dato.tela;
+                let telaFormateada = telaImprimir.replace(/\s+Y\s+/gi, '\\&').replace(/\s+AND\s+/gi, '\\&');
+
+                let cantTrajes = dato.cantidad;
+                let cantEtiquetasTraje = cantTrajes * 2;
+                let cantEtiquetasChaleco = dato.llevaChaleco ? cantTrajes : 0;
+                let totalFila = cantEtiquetasTraje + cantEtiquetasChaleco;
+                etiquetasProcesadas += totalFila;
+
+                // TABLA EDITABLE
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="vertical-align: middle;"><strong>${dato.tallaCalculada}</strong></td>
+                    <td style="vertical-align: middle; padding: 5px;"><input type="text" class="input-tabla" value="${dato.modelo}" onchange="actualizarDatoLista(${index}, 'modelo', this.value)" title="Clic para editar Modelo"></td>
+                    <td style="vertical-align: middle; padding: 5px;"><input type="text" class="input-tabla" value="${colorImprimir}" onchange="actualizarDatoLista(${index}, 'color', this.value)" title="Clic para editar Color"></td>
+                    <td style="vertical-align: middle; padding: 5px;"><input type="text" class="input-tabla" value="${telaFormateada.replace('\\&', ' Y ')}" onchange="actualizarDatoLista(${index}, 'tela', this.value)" title="Clic para editar Tela"></td>
+                    <td style="text-align:center; vertical-align: middle;">
+                        <input type="number" value="${dato.cantidad}" min="1" onchange="actualizarCantMonarch(${index}, this.value)" style="width: 50px; padding: 5px; text-align: center; border: 1px solid #d1d5db; border-radius: 4px; font-weight: bold;">
+                    </td>
+                    <td style="text-align:center; vertical-align: middle;">
+                        <input type="checkbox" style="width:20px; height:20px; cursor:pointer;" ${dato.llevaChaleco ? 'checked' : ''} onchange="toggleChalecoMonarch(${index}, this.checked)">
+                    </td>
+                    <td style="text-align:center; vertical-align: middle;"><strong style="color: #059669;">${totalFila}</strong></td>
+                    <td style="text-align:center; vertical-align: middle;">
+                        <button onclick="eliminarFilaMonarch(${index})" title="Quitar" style="background: #fee2e2; color: #dc2626; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">X</button>
+                    </td>`;
+                tbody.appendChild(tr);
+
+                function crearZPL(tallaZPL, cantidadZPL) {
+                    if (cantidadZPL <= 0) return;
+                    let modeloZPL = dato.modelo.length > 22 ? dato.modelo.substring(0, 22) : dato.modelo;
+                    let colorZPL = colorImprimir.length > 22 ? colorImprimir.substring(0, 22) : colorImprimir;
+
+                    let yPos = 115; 
+                    let zpl = `~SD27\n^XA^CI28^PR3\n^FO0,${yPos}^A0N,24^FB300,1,0,C^FD${cfgMarca}^FS\n`; yPos += 28;
+                    zpl += `^FO0,${yPos}^A0N,34^FB300,1,0,C^FDTALLA: ${tallaZPL}^FS\n`; yPos += 38;
+                    zpl += `^FO0,${yPos}^A0N,20^FB300,1,0,C^FD${textoModelo} ${modeloZPL}^FS\n`; yPos += 22;
+                    zpl += `^FO0,${yPos}^A0N,20^FB300,1,0,C^FDCOLOR: ${colorZPL}^FS\n`; yPos += 22;
+                    zpl += `^FO0,${yPos}^A0N,20^FB300,2,0,C^FD${textoTela} ${telaFormateada}^FS\n`; yPos += 40;
+                    if(forroGlobal !== '') { zpl += `^FO0,${yPos}^A0N,20^FB300,2,0,C^FD${textoForro} ${forroGlobal}^FS\n`; yPos += 40; } else { yPos += 10; }
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${origenZPL}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgRS1}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgRS2}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgDir1}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgDir2}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgDir3}^FS\n`; yPos += 18;
+                    zpl += `^FO0,${yPos}^A0N,18^FB300,1,0,C^FD${cfgRFC}^FS\n`; yPos += 22;
+                    if(objetoSimboloEnMemoria && objetoSimboloEnMemoria.gfa) { zpl += `^FO${objetoSimboloEnMemoria.x},${yPos}\n${objetoSimboloEnMemoria.gfa}\n`; }
+                    listaEtiquetas_monarch.push(zpl + `^XZ\n`);
+                    codigoZPLFinal_monarch += zpl + `^PQ${cantidadZPL}\n^XZ\n\n`;
+                }
+                crearZPL(dato.tallaCalculada, cantEtiquetasTraje);
+                crearZPL(dato.tallaChaleco, cantEtiquetasChaleco);
+            });
+
+            if(etiquetasProcesadas > 0) {
+                document.getElementById('carouselControls_monarch').style.display = 'flex';
+                actualizarVistaPrevia_monarch();
+            }
+        }
+
+        function actualizarVistaPrevia_monarch() {
+            document.getElementById('textoContador_monarch').innerText = `Diseño ${indiceActual_monarch + 1} de ${listaEtiquetas_monarch.length}`;
+            document.getElementById('btnPrev_monarch').disabled = (indiceActual_monarch === 0);
+            document.getElementById('btnNext_monarch').disabled = (indiceActual_monarch === listaEtiquetas_monarch.length - 1);
+            llamarAPI_Labelary(listaEtiquetas_monarch[indiceActual_monarch], 'previewImg_monarch', 'placeholderText_monarch', 'loaderText_monarch', '1.5x2.6');
+        }
+        function etiquetaAnterior_monarch() { if (indiceActual_monarch > 0) { indiceActual_monarch--; actualizarVistaPrevia_monarch(); } }
+        function siguienteEtiqueta_monarch() { if (indiceActual_monarch < listaEtiquetas_monarch.length - 1) { indiceActual_monarch++; actualizarVistaPrevia_monarch(); } }
+
+        function imprimirPorRed_monarch() {
+            const ip = document.getElementById('ipImpresora_monarch').value.trim();
+            if (!ip) return alert("Ingresa la IP de Monarch.");
+            localStorage.setItem('zebraIP_Nylon', ip);
+            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: codigoZPLFinal_monarch })
+            .then(() => alert(`✅ Lote enviado a: ${ip}`))
+            .catch(error => alert("❌ Error de conexión LAN."));
+        }
+
+        // =========================================================================
+        // FUNCIÓN GLOBAL API LABELARY
+        // =========================================================================
+        function llamarAPI_Labelary(codigoZPL, imgId, placeholderId, loaderId, tamano) {
+            const previewImg = document.getElementById(imgId);
+            const placeholder = document.getElementById(placeholderId);
+            const loader = document.getElementById(loaderId);
+            placeholder.style.display = 'none'; previewImg.style.display = 'none'; loader.style.display = 'block';
+            const urlEncodedZpl = encodeURIComponent(codigoZPL);
+            previewImg.src = `http://api.labelary.com/v1/printers/8dpmm/labels/${tamano}/0/${urlEncodedZpl}`;
+            previewImg.onload = function() { loader.style.display = 'none'; previewImg.style.display = 'block'; };
+            previewImg.onerror = function() { loader.style.display = 'none'; placeholder.style.display = 'block'; placeholder.innerText = "Error API."; placeholder.style.color = "red"; };
+        }
+    </script>
+</body>
+</html>
