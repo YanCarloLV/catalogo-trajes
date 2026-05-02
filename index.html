@@ -135,26 +135,78 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR DE CARGA DE DATOS -->
+            <!-- CONTENEDOR DE CARGA DE DATOS (solo visible antes de cargar BD) -->
             <div id="contenedorSubida_monarch" style="margin-top: 25px; padding-top: 20px; border-top: 2px dashed #d1d5db;">
-                
-                <div style="background: #ecfdf5; border: 2px dashed #10b981; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <label style="font-size: 1.1rem; color: #059669; font-weight: bold; display: block; margin-bottom: 10px;">📥 3. Pega tu lista Odoo directo (Cruce Inteligente):</label>
-                    <div id="zonaPaste_monarch" tabindex="0" style="background: #fff; border: 1px solid #9ca3af; border-radius: 5px; height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; color: #6b7280; font-style: italic;" onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.2)';" onblur="this.style.borderColor='#9ca3af'; this.style.boxShadow='none';">
-                        Haz clic aquí y presiona Ctrl+V para pegar (Col A: [SKU] Descripción | Col B: Cantidad)
-                    </div>
-                </div>
-
                 <div class="form-group" style="text-align: center;">
-                    <p style="margin-bottom: 10px; font-weight: bold; color: #4b5563;">Ó Cargar BD Manualmente (.xlsx):</p>
+                    <p style="margin-bottom: 10px; font-weight: bold; color: #4b5563;">📂 Cargar BD Manualmente (.xlsx) si no está configurado GitHub:</p>
                     <input type="file" id="excelBD_monarch" accept=".xlsx, .xls" style="border: 1px solid #d1d5db; background: #fff; padding: 10px; cursor: pointer;" />
                 </div>
             </div>
 
-            <!-- BUSCADOR INTELIGENTE -->
-            <div id="seccionBuscador_monarch" style="display: none; margin-top: 20px;">
-                <input type="text" id="buscador_monarch" class="search-bar-monarch" placeholder="🔍 Buscar modelo, color, talla o SKU..." oninput="filtrarCatalogoMonarch()">
-                <div id="catalogo_monarch" class="catalogo-grid-monarch"></div>
+            <!-- SECCIÓN PRINCIPAL (visible después de cargar BD) -->
+            <div id="seccionBuscador_monarch" style="display: none; margin-top: 20px; width: 100%;">
+
+                <!-- PESTAÑAS INTERNAS -->
+                <div style="display:flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 16px;">
+                    <button id="tabBtn_buscador" onclick="cambiarModoMonarch('buscador')"
+                        style="padding:10px 24px; font-weight:bold; font-size:0.95rem; border:none; cursor:pointer; background:transparent; color:#0ea5e9; border-bottom:3px solid #0ea5e9; margin-bottom:-2px; transition:all 0.2s;">
+                        🔍 Buscador Inteligente
+                    </button>
+                    <button id="tabBtn_masivo" onclick="cambiarModoMonarch('masivo')"
+                        style="padding:10px 24px; font-weight:bold; font-size:0.95rem; border:none; cursor:pointer; background:transparent; color:#9ca3af; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s;">
+                        📋 Pegado Masivo SAP
+                    </button>
+                </div>
+
+                <!-- PANEL BUSCADOR -->
+                <div id="panel_buscador_monarch">
+                    <input type="text" id="buscador_monarch" class="search-bar-monarch" placeholder="🔍 Buscar modelo, color, talla o SKU..." oninput="filtrarCatalogoMonarch()">
+                    <div id="catalogo_monarch" class="catalogo-grid-monarch"></div>
+                </div>
+
+                <!-- PANEL PEGADO MASIVO SAP -->
+                <div id="panel_masivo_monarch" style="display:none;">
+                    <div style="background:#ecfdf5; border:2px dashed #10b981; padding:15px; border-radius:8px;">
+                        <label style="font-size:1rem; color:#059669; font-weight:bold; display:block; margin-bottom:10px;">
+                            📥 Pega tu tabla de Excel aquí (Ctrl+V) &nbsp;—&nbsp; Col A: [SKU] Descripción &nbsp;|&nbsp; Col B: Cantidad
+                        </label>
+                        <div id="zonaPaste_monarch" tabindex="0"
+                            style="background:#fff; border:1px solid #9ca3af; border-radius:5px; overflow:hidden; box-shadow:inset 0 2px 4px rgba(0,0,0,0.05); outline:none; cursor:pointer; transition:all 0.2s;"
+                            onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.2)';"
+                            onblur="this.style.borderColor='#9ca3af'; this.style.boxShadow='inset 0 2px 4px rgba(0,0,0,0.05)';">
+                            <div style="max-height:250px; overflow-y:auto;" class="paste-scroll">
+                                <table style="width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left; margin:0;">
+                                    <thead style="background-color:#f0fdf4; color:#166534; position:sticky; top:0; z-index:10;">
+                                        <tr>
+                                            <th style="padding:9px 10px; border-bottom:1px solid #d1fae5; border-right:1px solid #d1fae5; width:14%;">SKU</th>
+                                            <th style="padding:9px 10px; border-bottom:1px solid #d1fae5; border-right:1px solid #d1fae5; width:28%;">Descripción pegada</th>
+                                            <th style="padding:9px 10px; border-bottom:1px solid #d1fae5; border-right:1px solid #d1fae5; width:6%; text-align:center;">Cant.</th>
+                                            <th style="padding:9px 10px; border-bottom:1px solid #d1fae5; border-right:1px solid #d1fae5; width:38%;">Composición (de BD)</th>
+                                            <th style="padding:9px 10px; border-bottom:1px solid #d1fae5; width:14%; text-align:center;">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpoTablaPegado_monarch">
+                                        <tr>
+                                            <td colspan="5" style="padding:32px; text-align:center; color:#9ca3af; font-style:italic;">
+                                                Haz clic aquí y presiona <strong style="color:#4b5563;">Ctrl + V</strong> para pegar tu tabla de Excel
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="mensajeExito_monarch" style="display:none; margin-top:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <span style="color:#059669; font-weight:bold; font-size:0.95rem;">
+                                ✅ <span id="cantEncontrados_monarch">0</span> cruzados con BD &nbsp;|&nbsp;
+                                <span style="color:#d97706;">⚠️ <span id="cantNoEncontrados_monarch">0</span> sin composición exacta</span>
+                            </span>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="limpiarPegadoMonarch()" style="padding:8px 16px; background:#fee2e2; color:#dc2626; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🗑️ Limpiar</button>
+                                <button onclick="agregarTodoDesdeTablaMonarch()" style="padding:8px 20px; background:#059669; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">➕ Agregar todo a lista de impresión</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -209,6 +261,165 @@
     </div>
 
 
+
+    <!-- ==========================================
+         MÓDULO 2: RECIBO ODOO (SIN PRECIOS)
+         ========================================== -->
+    <div id="tab-recibo" class="tab-content">
+        <div class="card">
+            <h2>🧾 Etiquetas de Recibo (5x4 cm)</h2>
+            <div class="instrucciones">
+                Sube el archivo <strong>.txt</strong> o <strong>.zpl</strong> directo de Odoo. Genera un diseño individual y centrado.
+            </div>
+            
+            <div class="form-group">
+                <label>1. Sube tu archivo Odoo (.txt / .zpl):</label>
+                <input type="file" id="fileInput_recibo" accept=".txt,.zpl" />
+            </div>
+        </div>
+
+        <div id="resultadosPrincipal_recibo" class="resultados-container" style="display: none;">
+            <div class="card panel-tabla">
+                <h3>📊 Desglose de Recibo:</h3>
+                <div style="overflow-x: auto; max-height: 400px;">
+                    <table id="dataTable_recibo">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Talla</th>
+                                <th>Descripción</th>
+                                <th>+ Chaleco Extra</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody_recibo"></tbody>
+                    </table>                        
+                </div>
+
+                <div style="display: none;"> 
+                    <textarea id="outputArea_recibo"></textarea>
+                </div>
+
+                <div class="seccion-impresion">
+                    <h2>🖧 Enviar a Zebra Cartón</h2>
+                    <div class="form-group">
+                        <label>IP Impresora de Cartón:</label>
+                        <input type="text" id="ipImpresora_recibo" placeholder="Ejemplo: 192.168.1.51" />
+                    </div>
+                    <button class="btn btn-imprimir" onclick="imprimirPorRed_recibo()">🖨️ IMPRIMIR RECIBOS</button>
+                    <button class="btn btn-descargar" onclick="descargarZPL('outputArea_recibo', 'etiquetas_recibo.zpl')">⬇️ Descargar .zpl</button>
+                </div>
+            </div>
+
+            <div class="card panel-preview">
+                <h2>👁️ Vista Previa (5x4 cm)</h2>
+                <div class="preview-box">
+                    <p id="placeholderText_recibo" style="color: #9ca3af;">Sube un archivo para previsualizar</p>
+                    <p id="loaderText_recibo" class="loader">Generando diseño...</p>
+                    <img id="previewImg_recibo" alt="Vista previa etiqueta zebra" />
+                    <div id="carouselControls_recibo" class="carousel-controls">
+                        <button class="btn-nav" id="btnPrev_recibo" onclick="etiquetaAnterior_recibo()">&#8592;</button>
+                        <span id="textoContador_recibo" class="contador">1 de X</span>
+                        <button class="btn-nav" id="btnNext_recibo" onclick="siguienteEtiqueta_recibo()">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MÓDULO 3: TIENDA COLLECTION (CON PRECIOS Y SAP)
+         ========================================== -->
+    <div id="tab-tienda" class="tab-content">
+        <div class="card">
+            <h2>🛍️ Tienda Collection (5x4 cm)</h2>
+            <div class="instrucciones" style="background-color: #fef3c7; border-left: 5px solid #f59e0b;">
+                <strong>Modo Tipo SAP:</strong> Copia tus datos de Excel (SKU, Descripción, Cantidad, Precio) y pégalos en la caja de abajo. El sistema acomodará <strong>2 artículos por etiqueta</strong>.
+            </div>
+            
+            <div id="contenedorPegado_tienda">
+                <label style="color: #1f2937; font-size: 1.1rem;">📥 1. Pega tu tabla de Excel aquí (Ctrl + V):</label>
+                
+                <div id="zonaPaste_tienda" tabindex="0" style="background: #fff; border: 1px solid #9ca3af; border-radius: 5px; overflow: hidden; margin-top: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); outline: none; cursor: pointer; transition: all 0.2s;" onfocus="this.style.borderColor='#0ea5e9'; this.style.boxShadow='0 0 0 3px rgba(14, 165, 233, 0.2)';" onblur="this.style.borderColor='#9ca3af'; this.style.boxShadow='inset 0 2px 4px rgba(0,0,0,0.05)';">
+                    <div style="max-height: 200px; overflow-y: auto;" class="paste-scroll">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; margin: 0;">
+                            <thead style="background-color: #f3f4f6; color: #4b5563; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="padding: 10px; border-bottom: 1px solid #d1d5db; border-right: 1px solid #d1d5db; width: 20%;">SKU</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid #d1d5db; border-right: 1px solid #d1d5db; width: 50%;">Descripción</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid #d1d5db; border-right: 1px solid #d1d5db; width: 10%; text-align: center;">Cant.</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid #d1d5db; width: 20%; text-align: right;">Precio Traje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuerpoTablaPegado_tienda">
+                                <tr>
+                                    <td colspan="4" style="padding: 30px; text-align: center; color: #9ca3af; font-style: italic;">
+                                        Haz clic aquí y presiona <strong style="color: #4b5563;">Ctrl + V</strong> para pegar tus filas de Excel...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="mensajeExito_tienda" style="display: none; color: #059669; font-weight: bold; text-align: center; margin-top: 10px; font-size: 0.95rem;">
+                    ✅ ¡Éxito! Se detectaron <span id="cantArticulos_tienda">0</span> artículos.
+                </div>
+            </div>
+        </div>
+
+        <div id="resultadosPrincipal_tienda" class="resultados-container" style="display: none;">
+            <div class="card panel-tabla">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">📊 Revisión (Ajusta precios y chalecos):</h3>
+                    <button class="btn" style="width: auto; background-color: #2563eb; padding: 10px 20px;" onclick="ejecutarGeneracionTienda()">▶️ EJECUTAR DISEÑO</button>
+                </div>
+                
+                <div style="overflow-x: auto; max-height: 400px;">
+                    <table id="dataTable_tienda">
+                          <thead style="position: sticky; top: 0; background-color: #f9fafb; z-index: 10;">
+                            <tr>
+                                <th style="width: 15%;">SKU</th>
+                                <th style="width: 45%;">Descripción (Editable) ✏️</th>
+                                <th style="width: 8%; text-align: center;">Cant.</th>
+                                <th style="width: 12%;">Precio Traje</th>
+                                <th style="width: 10%; text-align: center;">¿Chaleco?</th>
+                                <th style="width: 10%;">Precio Chaleco</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody_tienda"></tbody>
+                    </table>                        
+                </div>
+
+                <div style="display: none;"> 
+                    <textarea id="outputArea_tienda"></textarea>
+                </div>
+
+                <div class="seccion-impresion">
+                    <h2>🖧 Enviar a Zebra Cartón</h2>
+                    <div class="form-group">
+                        <label>IP Impresora de Cartón:</label>
+                        <input type="text" id="ipImpresora_tienda" placeholder="Ejemplo: 192.168.1.51" />
+                    </div>
+                    <button class="btn btn-imprimir" onclick="imprimirPorRed_tienda()">🖨️ IMPRIMIR LOTE TIENDA</button>
+                    <button class="btn btn-descargar" onclick="descargarZPL('outputArea_tienda', 'etiquetas_tienda.zpl')">⬇️ Descargar .zpl</button>
+                </div>
+            </div>
+
+            <div class="card panel-preview">
+                <h2>👁️ Vista Previa Dividida (5x4 cm)</h2>
+                <div class="preview-box">
+                    <p id="placeholderText_tienda" style="color: #9ca3af;">Oprime "Ejecutar Diseño" para ver</p>
+                    <p id="loaderText_tienda" class="loader">Generando diseño...</p>
+                    <img id="previewImg_tienda" alt="Vista previa etiqueta zebra tienda" />
+                    <div id="carouselControls_tienda" class="carousel-controls">
+                        <button class="btn-nav" id="btnPrev_tienda" onclick="etiquetaAnterior_tienda()">&#8592;</button>
+                        <span id="textoContador_tienda" class="contador">1 de X</span>
+                        <button class="btn-nav" id="btnNext_tienda" onclick="siguienteEtiqueta_tienda()">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
 
         // =========================================================================
@@ -222,9 +433,35 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
             btn.classList.add('active');
         }
 
+        function cambiarModoMonarch(modo) {
+            const panelBuscador = document.getElementById('panel_buscador_monarch');
+            const panelMasivo = document.getElementById('panel_masivo_monarch');
+            const btnBuscador = document.getElementById('tabBtn_buscador');
+            const btnMasivo = document.getElementById('tabBtn_masivo');
+            if(modo === 'buscador') {
+                panelBuscador.style.display = 'block';
+                panelMasivo.style.display = 'none';
+                btnBuscador.style.color = '#0ea5e9'; btnBuscador.style.borderBottom = '3px solid #0ea5e9';
+                btnMasivo.style.color = '#9ca3af'; btnMasivo.style.borderBottom = '3px solid transparent';
+            } else {
+                panelBuscador.style.display = 'none';
+                panelMasivo.style.display = 'block';
+                btnMasivo.style.color = '#059669'; btnMasivo.style.borderBottom = '3px solid #059669';
+                btnBuscador.style.color = '#9ca3af'; btnBuscador.style.borderBottom = '3px solid transparent';
+                // Enfocar la zona de pegado automáticamente
+                setTimeout(() => { const z = document.getElementById('zonaPaste_monarch'); if(z) z.focus(); }, 100);
+            }
+        }
+
         window.onload = function() {
             const ipNylon = localStorage.getItem('zebraIP_Nylon');
             if(ipNylon) document.getElementById('ipImpresora_monarch').value = ipNylon;
+
+            const ipCarton = localStorage.getItem('zebraIP_Carton');
+            if(ipCarton) {
+                document.getElementById('ipImpresora_recibo').value = ipCarton;
+                document.getElementById('ipImpresora_tienda').value = ipCarton;
+            }
 
             if(GITHUB_EXCEL_URL && GITHUB_EXCEL_URL.startsWith('http')) {
                 const loaderStatus = document.getElementById('contenedorSubida_monarch');
@@ -353,51 +590,102 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
         }
 
         // ===============================================
-        // PEGADO DIRECTO EN MÓDULO 1 (Cruce con BD)
         // ===============================================
+        // PEGADO MASIVO TIPO SAP - MÓDULO 1 (Cruce con BD)
+        // ===============================================
+        let filasParaAgregarMonarch = []; // Buffer de filas parseadas listas para agregar
+
         document.getElementById('zonaPaste_monarch').addEventListener('paste', function(e) {
             e.preventDefault();
-            if(catalogoOdooGlobal.length === 0) { alert("⚠️ Primero carga la Base de Datos Odoo para poder cruzar información."); return; }
-            
             let texto = (e.clipboardData || window.clipboardData).getData('text');
             let filas = texto.split('\n');
-            let agregados = 0;
+            let htmlFilas = '';
+            let encontrados = 0;
+            let noEncontrados = 0;
+            filasParaAgregarMonarch = [];
 
             filas.forEach(fila => {
                 let cols = fila.split('\t');
-                if(cols.length >= 2 && cols[0].trim() !== '') {
-                    let nombrePasted = cols[0].trim();
-                    let cantPasted = parseInt(cols[1]) || 1;
-                    
-                    // Extraer SKU entre corchetes
-                    let matchSku = nombrePasted.match(/\[(.*?)\]/);
-                    let sku = matchSku ? matchSku[1] : 'S/N';
-                    
-                    let prodExistente = catalogoOdooGlobal.find(p => p.sku === sku && sku !== 'S/N');
-                    
-                    if(prodExistente) {
-                        // Si existe en BD, usamos sus datos exactos
-                        agregarATablaMonarch(prodExistente.id, cantPasted);
-                        agregados++;
-                    } else {
-                        // Si no existe (o no tiene SKU), lo forzamos extrayendo datos del texto pegado
-                        let extraido = extraerDatosOdoo(nombrePasted, "", sku);
-                        let nuevoId = "custom_" + Date.now() + Math.floor(Math.random()*1000);
-                        datosTabla_monarch.push({
-                            id: nuevoId, sku: sku, tallaCalculada: extraido.tallaCalculada, tallaChaleco: extraido.tallaChaleco,
-                            modelo: extraido.modelo, color: extraido.color, tela: extraido.tela, cantidad: cantPasted, llevaChaleco: false 
-                        });
-                        agregados++;
-                    }
+                if(cols.length < 1 || cols[0].trim() === '') return;
+
+                let nombrePasted = cols[0].trim();
+                let cantPasted = parseInt(cols[1]) || 1;
+                let matchSku = nombrePasted.match(/\[(.*?)\]/);
+                let sku = matchSku ? matchSku[1] : 'S/N';
+
+                let prodEnBD = catalogoOdooGlobal.find(p => p.sku === sku && sku !== 'S/N');
+
+                let composicion = '';
+                let estadoHtml = '';
+                let datosParaAgregar = null;
+
+                if(prodEnBD) {
+                    composicion = `<span style="color:#166534;">${prodEnBD.tela}</span>`;
+                    estadoHtml = `<span style="background:#d1fae5; color:#065f46; padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">✅ BD</span>`;
+                    encontrados++;
+                    datosParaAgregar = { tipo: 'bd', id: prodEnBD.id, cantidad: cantPasted };
+                } else {
+                    let extraido = extraerDatosOdoo(nombrePasted, "", sku);
+                    composicion = `<span style="color:#92400e;">${extraido.tela !== 'NO ESPECIFICADA' ? extraido.tela : '—'}</span>`;
+                    estadoHtml = `<span style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">⚠️ Texto</span>`;
+                    noEncontrados++;
+                    datosParaAgregar = { tipo: 'custom', nombre: nombrePasted, sku, extraido, cantidad: cantPasted };
                 }
+
+                filasParaAgregarMonarch.push(datosParaAgregar);
+
+                let descCorta = nombrePasted.replace(/\[.*?\]\s*/, '').substring(0, 45);
+                htmlFilas += `<tr style="border-bottom:1px solid #e5e7eb; transition:background 0.2s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:7px 10px; border-right:1px solid #e5e7eb; color:#1f2937; font-weight:bold;">${sku}</td>
+                    <td style="padding:7px 10px; border-right:1px solid #e5e7eb; color:#4b5563; font-size:0.8rem;">${descCorta}</td>
+                    <td style="padding:7px 10px; border-right:1px solid #e5e7eb; text-align:center; font-weight:bold; color:#0369a1;">${cantPasted}</td>
+                    <td style="padding:7px 10px; border-right:1px solid #e5e7eb; font-size:0.8rem;">${composicion}</td>
+                    <td style="padding:7px 10px; text-align:center;">${estadoHtml}</td>
+                </tr>`;
             });
 
-            if(agregados > 0) {
-                generarEtiquetasMonarch();
-                renderizarCatalogoMonarch(document.getElementById('buscador_monarch').value);
-                alert(`✅ Se detectaron y agregaron ${agregados} trajes a la lista de impresión.`);
+            const tbody = document.getElementById('cuerpoTablaPegado_monarch');
+            const msgBox = document.getElementById('mensajeExito_monarch');
+
+            if(filasParaAgregarMonarch.length > 0) {
+                tbody.innerHTML = htmlFilas;
+                document.getElementById('cantEncontrados_monarch').innerText = encontrados;
+                document.getElementById('cantNoEncontrados_monarch').innerText = noEncontrados;
+                msgBox.style.display = 'flex';
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:20px; text-align:center; color:#dc2626; font-weight:bold;">❌ No se detectó formato válido. Verifica que Col A tenga datos.</td></tr>`;
+                msgBox.style.display = 'none';
             }
         });
+
+        function agregarTodoDesdeTablaMonarch() {
+            if(filasParaAgregarMonarch.length === 0) return;
+            let agregados = 0;
+            filasParaAgregarMonarch.forEach(item => {
+                if(item.tipo === 'bd') {
+                    agregarATablaMonarch(item.id, item.cantidad);
+                } else {
+                    let nuevoId = "custom_" + Date.now() + Math.floor(Math.random()*1000);
+                    datosTabla_monarch.push({
+                        id: nuevoId, sku: item.sku,
+                        tallaCalculada: item.extraido.tallaCalculada, tallaChaleco: item.extraido.tallaChaleco,
+                        modelo: item.extraido.modelo, color: item.extraido.color, tela: item.extraido.tela,
+                        cantidad: item.cantidad, llevaChaleco: false
+                    });
+                }
+                agregados++;
+            });
+            generarEtiquetasMonarch();
+            renderizarCatalogoMonarch(document.getElementById('buscador_monarch') ? document.getElementById('buscador_monarch').value : '');
+            limpiarPegadoMonarch();
+            alert(`✅ ${agregados} traje(s) agregados a la lista de impresión.`);
+        }
+
+        function limpiarPegadoMonarch() {
+            filasParaAgregarMonarch = [];
+            document.getElementById('cuerpoTablaPegado_monarch').innerHTML = `<tr><td colspan="5" style="padding:28px; text-align:center; color:#9ca3af; font-style:italic;">Haz clic aquí y presiona <strong style="color:#4b5563;">Ctrl + V</strong> para pegar tu tabla de Excel<br><small style="font-size:0.78rem;">(Col A: [SKU] Descripción &nbsp;|&nbsp; Col B: Cantidad)</small></td></tr>`;
+            document.getElementById('mensajeExito_monarch').style.display = 'none';
+        }
 
         // ===============================================
         // LÓGICA DE INTERFAZ Y TABLA
@@ -618,6 +906,298 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
             previewImg.onload = function() { loader.style.display = 'none'; previewImg.style.display = 'block'; };
             previewImg.onerror = function() { loader.style.display = 'none'; placeholder.style.display = 'block'; placeholder.innerText = "Error API."; placeholder.style.color = "red"; };
         }
-    </script>
+
+
+        function descargarZPL(textAreaId, nombreArchivo) {
+            const texto = document.getElementById(textAreaId).value;
+            if(!texto) return alert("No hay código ZPL generado.");
+            const enlace = document.createElement('a');
+            enlace.href = window.URL.createObjectURL(new Blob([texto], { type: 'text/plain' }));
+            enlace.download = nombreArchivo;
+            enlace.click();
+        }
+
+        // =========================================================================
+        // MÓDULO 2: RECIBO ODOO (SIN PRECIOS, DISEÑO CENTRADO)
+        // =========================================================================
+        let listaEtiquetas_recibo = []; let indiceActual_recibo = 0; let datosTabla_recibo = [];
+
+        document.getElementById('fileInput_recibo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) { procesarZPL_recibo(e.target.result); };
+            reader.readAsText(file);
+        });
+
+        function procesarZPL_recibo(zplCrudo) {
+            let etiquetas = zplCrudo.split('^XZ');
+            datosTabla_recibo = [];
+            etiquetas.forEach(etiqueta => {
+                if (etiqueta.trim() === '') return;
+                let skuMatch = etiqueta.match(/\[(\d+)\]/);
+                let fdMatches = [...etiqueta.matchAll(/\^FD(.*?)\^FS/g)];
+                if (skuMatch && fdMatches.length >= 2) {
+                    let sku = skuMatch[1];
+                    let descLimpia = fdMatches[0][1].replace(/\s*\[\d+\]\s*/, '').trim();
+                    let tallaOdoo = fdMatches[1][1];
+                    datosTabla_recibo.push({ sku: sku, talla: tallaOdoo, descripcion: descLimpia, llevaChaleco: false });
+                }
+            });
+            document.getElementById('fileInput_recibo').value = ""; 
+            generarEtiquetasRecibo();
+        }
+
+        function toggleChalecoRecibo(index, valor) {
+            datosTabla_recibo[index].llevaChaleco = valor;
+            generarEtiquetasRecibo();
+        }
+
+        function generarEtiquetasRecibo() {
+            const tbody = document.getElementById('tableBody_recibo');
+            if(tbody) tbody.innerHTML = '';
+            let zplCorregido = ''; listaEtiquetas_recibo = []; indiceActual_recibo = 0;
+
+            datosTabla_recibo.forEach((dato, index) => {
+                let descTraducida = traducir(dato.descripcion);
+                if (tbody) {
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${dato.sku}</strong></td>
+                        <td>${dato.talla}</td>
+                        <td><small>${descTraducida}</small></td>
+                        <td style="text-align: center; background-color: #f8fafc;">
+                            <input type="checkbox" style="width:18px; height:18px; cursor:pointer;" ${dato.llevaChaleco ? 'checked' : ''} onchange="toggleChalecoRecibo(${index}, this.checked)">
+                        </td>`;
+                    tbody.appendChild(tr);
+                }
+
+                function crearZPLUnico(encabezado) {
+                    let zpl = `~SD27\n^XA^CI28^PR3\n`;
+                    zpl += `^FO0,15^A0N,30^FB400,1,0,C^FD${encabezado}^FS\n`;
+                    zpl += `^FO0,55^A0N,25^FB400,1,0,C^FDTALLA - ${dato.talla}^FS\n`;
+                    zpl += `^FO0,90^A0N,22^FB400,2,0,C^FD${descTraducida}^FS\n`;
+                    zpl += `^BY2,2,70\n^FO60,135^BCN,70,N,N,N^FD${dato.sku}^FS\n`;
+                    zpl += `^FO0,215^A0N,30^FB400,1,0,C^FD${dato.sku}^FS\n`;
+                    zpl += `^XZ`;
+                    return zpl;
+                }
+
+                let zplTraje = crearZPLUnico("TRAJE");
+                listaEtiquetas_recibo.push(zplTraje);
+                zplCorregido += zplTraje + '\n\n';
+
+                if (dato.llevaChaleco) {
+                    let zplChaleco = crearZPLUnico("CHALECO");
+                    listaEtiquetas_recibo.push(zplChaleco);
+                    zplCorregido += zplChaleco + '\n\n';
+                }
+            });
+
+            document.getElementById('outputArea_recibo').value = zplCorregido;
+            if (datosTabla_recibo.length > 0) {
+                document.getElementById('resultadosPrincipal_recibo').style.display = 'flex';
+                document.getElementById('carouselControls_recibo').style.display = 'flex';
+                actualizarVistaPrevia_recibo();
+            } else { document.getElementById('resultadosPrincipal_recibo').style.display = 'none'; }
+        }
+
+        function actualizarVistaPrevia_recibo() {
+            document.getElementById('textoContador_recibo').innerText = `${indiceActual_recibo + 1} de ${listaEtiquetas_recibo.length}`;
+            document.getElementById('btnPrev_recibo').disabled = (indiceActual_recibo === 0);
+            document.getElementById('btnNext_recibo').disabled = (indiceActual_recibo === listaEtiquetas_recibo.length - 1);
+            llamarAPI_Labelary(listaEtiquetas_recibo[indiceActual_recibo], 'previewImg_recibo', 'placeholderText_recibo', 'loaderText_recibo', '2x1.5');
+        }
+        function etiquetaAnterior_recibo() { if (indiceActual_recibo > 0) { indiceActual_recibo--; actualizarVistaPrevia_recibo(); } }
+        function siguienteEtiqueta_recibo() { if (indiceActual_recibo < listaEtiquetas_recibo.length - 1) { indiceActual_recibo++; actualizarVistaPrevia_recibo(); } }
+
+        function imprimirPorRed_recibo() {
+            const ip = document.getElementById('ipImpresora_recibo').value.trim();
+            const textoZPL = document.getElementById('outputArea_recibo').value;
+            if (!ip) return alert("Ingresa IP de Zebra Cartón.");
+            if (!textoZPL) return alert("No hay datos.");
+            localStorage.setItem('zebraIP_Carton', ip);
+            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
+            .then(() => alert(`✅ Recibos enviados a: ${ip}`))
+            .catch(error => alert("❌ Error LAN."));
+        }
+
+        // =========================================================================
+        // MÓDULO 3: TIENDA COLLECTION (CON PRECIOS Y MITADES)
+        // =========================================================================
+        let listaEtiquetas_tienda = []; let indiceActual_tienda = 0; let datosTabla_tienda = []; let itemsParaImprimir_tienda = [];
+
+        document.getElementById('zonaPaste_tienda').addEventListener('paste', function(e) {
+            e.preventDefault();
+            let texto = (e.clipboardData || window.clipboardData).getData('text');
+            
+            let filas = texto.split('\n');
+            let tbody = document.getElementById('cuerpoTablaPegado_tienda');
+            let htmlFilas = '';
+            let datosValidos = 0;
+            
+            filas.forEach(fila => {
+                let cols = fila.split('\t');
+                if(cols.length >= 3 && cols[0].trim() !== '') {
+                    htmlFilas += `<tr style="border-bottom: 1px solid #e5e7eb; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 8px 10px; border-right: 1px solid #e5e7eb; color: #1f2937;"><strong>${cols[0].trim()}</strong></td>
+                        <td style="padding: 8px 10px; border-right: 1px solid #e5e7eb; color: #4b5563;">${cols[1] ? cols[1].trim() : ''}</td>
+                        <td style="padding: 8px 10px; text-align: center; border-right: 1px solid #e5e7eb; color: #4b5563;">${cols[2] ? cols[2].trim() : '1'}</td>
+                        <td style="padding: 8px 10px; text-align: right; color: #059669; font-weight: bold;">$${cols[3] ? cols[3].replace(/[^0-9.]/g, '') : '0'}</td>
+                    </tr>`;
+                    datosValidos++;
+                }
+            });
+            
+            if (datosValidos > 0) {
+                tbody.innerHTML = htmlFilas;
+                document.getElementById('mensajeExito_tienda').style.display = 'block';
+                document.getElementById('cantArticulos_tienda').innerText = datosValidos;
+                procesarTextoPegado_tienda(texto);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #dc2626; font-weight: bold;">❌ No se detectó formato de Excel válido. Intenta copiar de nuevo.</td></tr>`;
+                document.getElementById('mensajeExito_tienda').style.display = 'none';
+            }
+        });
+
+        function procesarTextoPegado_tienda(texto) {
+            datosTabla_tienda = [];
+            let filas = texto.split('\n');
+            filas.forEach(fila => {
+                let columnas = fila.split('\t');
+                if(columnas.length >= 3 && columnas[0].trim() !== '') {
+                    datosTabla_tienda.push({ 
+                        sku: columnas[0].trim(), 
+                        descripcion: columnas[1] ? columnas[1].trim() : "SIN DESC", 
+                        cantidad: parseInt(columnas[2]) || 1,
+                        precioTraje: columnas[3] ? columnas[3].replace(/[^0-9.]/g, '') : "0",
+                        llevaChaleco: false, precioChaleco: "0" 
+                    });
+                }
+            });
+            renderizarTablaTienda();
+        }
+
+        function renderizarTablaTienda() {
+            const tbody = document.getElementById('tableBody_tienda');
+            if(tbody) tbody.innerHTML = '';
+            
+            datosTabla_tienda.forEach((dato, index) => {
+                let tr = document.createElement('tr');
+                tr.style.transition = "background-color 0.2s";
+                tr.onmouseover = function() { this.style.backgroundColor = "#f9fafb"; };
+                tr.onmouseout = function() { this.style.backgroundColor = "transparent"; };
+
+                tr.innerHTML = `
+                    <td style="vertical-align: middle;"><strong>${dato.sku}</strong></td>
+                    
+                    <td style="vertical-align: middle; padding: 5px;">
+                        <input type="text" value="${dato.descripcion}" 
+                            onchange="actualizarDatoTienda(${index}, 'descripcion', this.value)"
+                            title="Haz clic para editar la descripción"
+                            style="width: 100%; padding: 8px; border: 1px solid transparent; background-color: transparent; border-radius: 4px; font-family: inherit; font-size: 0.85rem; color: #4b5563; transition: all 0.2s; box-sizing: border-box;"
+                            onfocus="this.style.border='1px solid #0ea5e9'; this.style.backgroundColor='#fff'; this.style.color='#1f2937';"
+                            onblur="this.style.border='1px solid transparent'; this.style.backgroundColor='transparent'; this.style.color='#4b5563';">
+                    </td>
+
+                    <td style="text-align: center; font-size: 1.1rem; vertical-align: middle;"><strong>${dato.cantidad}</strong></td>
+                    
+                    <td style="vertical-align: middle;">
+                        <input type="number" value="${dato.precioTraje}" 
+                            onchange="actualizarDatoTienda(${index}, 'precioTraje', this.value)" 
+                            style="width: 85px; padding: 8px; text-align: center; font-weight: bold; border: 1px solid #d1d5db; border-radius: 5px; color: #1f2937; box-sizing: border-box;"
+                            onfocus="this.style.borderColor='#0ea5e9';" onblur="this.style.borderColor='#d1d5db';">
+                    </td>
+                    
+                    <td style="text-align: center; background-color: #f8fafc; vertical-align: middle;">
+                        <input type="checkbox" style="width:20px; height:20px; cursor:pointer;" 
+                            ${dato.llevaChaleco ? 'checked' : ''} 
+                            onchange="actualizarDatoTienda(${index}, 'llevaChaleco', this.checked)">
+                    </td>
+                    
+                    <td style="background-color: #f8fafc; vertical-align: middle;">
+                        <input type="number" value="${dato.precioChaleco}" placeholder="$$" 
+                            onchange="actualizarDatoTienda(${index}, 'precioChaleco', this.value)" 
+                            style="width: 85px; padding: 8px; text-align: center; font-weight: bold; border: 1px solid #10b981; border-radius: 5px; color: #166534; box-sizing: border-box; ${dato.llevaChaleco ? '' : 'display: none;'}"
+                            onfocus="this.style.borderColor='#10b981';" onblur="this.style.borderColor='#10b981';">
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            
+            if(datosTabla_tienda.length > 0) {
+                document.getElementById('resultadosPrincipal_tienda').style.display = 'flex';
+                document.getElementById('carouselControls_tienda').style.display = 'none'; 
+            }
+        }
+
+        function actualizarDatoTienda(index, campo, valor) {
+            datosTabla_tienda[index][campo] = valor;
+            if(campo === 'llevaChaleco') renderizarTablaTienda(); 
+        }
+
+        function ejecutarGeneracionTienda() {
+            itemsParaImprimir_tienda = [];
+            datosTabla_tienda.forEach(dato => {
+                for(let i = 0; i < dato.cantidad; i++) {
+                    itemsParaImprimir_tienda.push({ desc: dato.descripcion, precio: parseFloat(dato.precioTraje), barcode: dato.sku });
+                    if(dato.llevaChaleco) {
+                        let descChaleco = "CHALECO " + dato.descripcion.replace(/TRAJE\s*/i, '');
+                        itemsParaImprimir_tienda.push({ desc: descChaleco.substring(0, 35), precio: parseFloat(dato.precioChaleco), barcode: dato.sku });
+                    }
+                }
+            });
+            generarZPLTiendaMitades();
+        }
+
+        function generarZPLTiendaMitades() {
+            let zplCorregido = ''; listaEtiquetas_tienda = []; indiceActual_tienda = 0;
+            for (let i = 0; i < itemsParaImprimir_tienda.length; i += 2) {
+                let itemArriba = itemsParaImprimir_tienda[i];
+                let itemAbajo = itemsParaImprimir_tienda[i + 1]; 
+                let zpl = `~SD27\n^XA^CI28^PR3\n`;
+                
+                function dibujarBloque(item, yOffset) {
+                    let pFormateado = isNaN(item.precio) ? item.precio : item.precio.toLocaleString('en-US');
+                    let bloque = `^FO10,${yOffset + 20}^A0N,22^FB380,1,0,C^FD${item.desc}^FS\n`; 
+                    bloque += `^BY2,2,40\n^FO40,${yOffset + 50}^BCN,40,N,N,N^FD${item.barcode}^FS\n`; 
+                    bloque += `^FO0,${yOffset + 95}^A0N,20^FB400,1,0,C^FD${item.barcode}^FS\n`; 
+                    bloque += `^FO0,${yOffset + 120}^A0N,26^FB400,1,0,C^FDPRECIO $${pFormateado}.00 MX^FS\n`; 
+                    return bloque;
+                }
+
+                zpl += dibujarBloque(itemArriba, 0); 
+                if(itemAbajo) { zpl += `^FO20,158^GB360,2,2^FS\n`; zpl += dibujarBloque(itemAbajo, 160); } 
+                zpl += `^XZ`;
+                listaEtiquetas_tienda.push(zpl); zplCorregido += zpl + '\n\n';
+            }
+
+            document.getElementById('outputArea_tienda').value = zplCorregido;
+            if (listaEtiquetas_tienda.length > 0) {
+                document.getElementById('carouselControls_tienda').style.display = 'flex';
+                actualizarVistaPrevia_tienda();
+            }
+        }
+
+        function actualizarVistaPrevia_tienda() {
+            document.getElementById('textoContador_tienda').innerText = `${indiceActual_tienda + 1} de ${listaEtiquetas_tienda.length}`;
+            document.getElementById('btnPrev_tienda').disabled = (indiceActual_tienda === 0);
+            document.getElementById('btnNext_tienda').disabled = (indiceActual_tienda === listaEtiquetas_tienda.length - 1);
+            llamarAPI_Labelary(listaEtiquetas_tienda[indiceActual_tienda], 'previewImg_tienda', 'placeholderText_tienda', 'loaderText_tienda', '2x1.5');
+        }
+        function etiquetaAnterior_tienda() { if (indiceActual_tienda > 0) { indiceActual_tienda--; actualizarVistaPrevia_tienda(); } }
+        function siguienteEtiqueta_tienda() { if (indiceActual_tienda < listaEtiquetas_tienda.length - 1) { indiceActual_tienda++; actualizarVistaPrevia_tienda(); } }
+
+        function imprimirPorRed_tienda() {
+            const ip = document.getElementById('ipImpresora_tienda').value.trim();
+            const textoZPL = document.getElementById('outputArea_tienda').value;
+            if (!ip) return alert("Ingresa IP de Zebra Cartón.");
+            if (!textoZPL) return alert("Ejecuta el diseño primero.");
+            localStorage.setItem('zebraIP_Carton', ip);
+            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
+            .then(() => alert(`✅ Lote de Tienda enviado a: ${ip}`))
+            .catch(error => alert("❌ Error LAN."));
+        }
+
+        </script>
 </body>
 </html>
