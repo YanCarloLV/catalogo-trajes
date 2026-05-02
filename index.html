@@ -154,7 +154,7 @@
                     </button>
                     <button id="tabBtn_masivo" onclick="cambiarModoMonarch('masivo')"
                         style="padding:10px 24px; font-weight:bold; font-size:0.95rem; border:none; cursor:pointer; background:transparent; color:#9ca3af; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s;">
-                        📋 Pegado Masivo
+                        📋 Pegado Masivo SAP
                     </button>
                 </div>
 
@@ -494,16 +494,144 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
         };
 
 
+        // =========================================================================
+        // MOTOR DE TRADUCCIÓN INTELIGENTE (ES → EN)
+        // Estrategia: normalizar acentos → ordenar frases de mayor a menor longitud
+        // → reemplazar con marcadores temporales → restaurar para evitar doble-reemplazo
+        // =========================================================================
         const traducciones = {
-            "NEGRO": "BLACK", "MARINO": "NAVY", "GRIS": " GREY OXFORD", "GRIS MEDIO": "LIGHT GREY", "VERDE HUNTER": "HUNTER GREEN", "VERDE": "GREEN", "AZUL NOCHE": "BLUE NIGHT", "AZUL REY": "ROYAL BLUE", "AZUL FRANCIA": "BLUE FRANCE", "ROJO": "RED", "VINO": "BURGUNDY", "BLANCO": "WHITE", "CAFE": "BROWN", "BEIGE": "BEIGE", "MOSTAZA": "MUSTARD", "POLIESTER": "POLYESTER", "POLIÉSTER": "POLYESTER", "VISCOSA": "VISCOSE", "LANA": "WOOL", "ALGODON": "COTTON", "ALGODÓN": "COTTON", "ELASTANO": "ELASTANE", "SPANDEX": "SPANDEX", "LINO": "LINEN", "SEDA": "SILK"
+            // ── GRISES (compuestos primero) ──────────────────────────────────────
+            "GRIS MARENGO":"DARK CHARCOAL","GRIS ANTRACITA":"ANTHRACITE GREY",
+            "GRIS OXFORD":"GREY OXFORD","GRIS PIZARRA":"SLATE GREY",
+            "GRIS PERLA":"PEARL GREY","GRIS PLOMO":"LEAD GREY",
+            "GRIS PIEDRA":"STONE GREY","GRIS ACERO":"STEEL GREY",
+            "GRIS CLARO":"LIGHT GREY","GRIS MEDIO":"MEDIUM GREY",
+            "GRIS OSCURO":"DARK GREY","GRIS AZULADO":"BLUE GREY",
+            "GRIS CENIZA":"ASH GREY","GRIS":"GREY OXFORD",
+            // ── AZULES ───────────────────────────────────────────────────────────
+            "AZUL PETROLEO":"PETROLEUM BLUE","AZUL ACERO":"STEEL BLUE",
+            "AZUL COBALTO":"COBALT BLUE","AZUL ELECTRICO":"ELECTRIC BLUE",
+            "AZUL CIELO":"SKY BLUE","AZUL MARINO":"NAVY BLUE",
+            "AZUL NOCHE":"MIDNIGHT BLUE","AZUL REY":"ROYAL BLUE",
+            "AZUL FRANCIA":"FRENCH BLUE","AZUL PAVO":"TEAL BLUE",
+            "AZUL INDIGO":"INDIGO BLUE","AZUL TURQUESA":"TURQUOISE BLUE",
+            "AZUL AGUAMARINA":"AQUAMARINE","AZUL CLARO":"LIGHT BLUE",
+            "AZUL OSCURO":"DARK BLUE","AZUL PASTEL":"PASTEL BLUE",
+            "AZUL KLEIN":"KLEIN BLUE","AZUL SAFIRO":"SAPPHIRE BLUE",
+            "AZUL DENIM":"DENIM BLUE","AZUL HIELO":"ICE BLUE",
+            "AZUL":"BLUE","MARINO":"NAVY",
+            // ── VERDES ───────────────────────────────────────────────────────────
+            "VERDE HUNTER":"HUNTER GREEN","VERDE BOTELLA":"BOTTLE GREEN",
+            "VERDE OLIVO":"OLIVE GREEN","VERDE MILITAR":"MILITARY GREEN",
+            "VERDE ESMERALDA":"EMERALD GREEN","VERDE PINO":"PINE GREEN",
+            "VERDE MENTA":"MINT GREEN","VERDE AGUA":"AQUA GREEN",
+            "VERDE OSCURO":"DARK GREEN","VERDE CLARO":"LIGHT GREEN",
+            "VERDE MUSGO":"MOSS GREEN","VERDE SALVIA":"SAGE GREEN",
+            "VERDE LIMA":"LIME GREEN","VERDE SELVA":"JUNGLE GREEN",
+            "VERDE JADE":"JADE GREEN","VERDE":"GREEN",
+            // ── CAFES / MARRONES ─────────────────────────────────────────────────
+            "CAFE OSCURO":"DARK BROWN","CAFE CLARO":"LIGHT BROWN",
+            "CAFE CHOCOLATE":"CHOCOLATE BROWN","CAFE TABACO":"TOBACCO BROWN",
+            "CAFE MOCA":"MOCHA BROWN","CAFE TIERRA":"EARTH BROWN",
+            "CAFE CAMEL":"CAMEL BROWN","CAFE TOSTADO":"TOASTED BROWN",
+            "CAFE":"BROWN",
+            // ── ROJOS ────────────────────────────────────────────────────────────
+            "ROJO VINO":"WINE RED","ROJO CEREZA":"CHERRY RED",
+            "ROJO OSCURO":"DARK RED","ROJO SANGRE":"BLOOD RED",
+            "ROJO CORAL":"CORAL RED","ROJO LADRILLO":"BRICK RED",
+            "ROJO TOMATE":"TOMATO RED","ROJO":"RED",
+            // ── VINOS / BURDEOS ───────────────────────────────────────────────────
+            "VINO OSCURO":"DARK BURGUNDY","VINO TINTO":"DEEP BURGUNDY",
+            "VINO":"BURGUNDY","BURDEOS":"BORDEAUX",
+            // ── NEGROS ───────────────────────────────────────────────────────────
+            "NEGRO CARBON":"CARBON BLACK","NEGRO AZULADO":"BLUE BLACK",
+            "NEGRO MATE":"MATTE BLACK","NEGRO":"BLACK",
+            // ── BLANCOS ───────────────────────────────────────────────────────────
+            "BLANCO ROTO":"OFF WHITE","BLANCO HUESO":"BONE WHITE",
+            "BLANCO PERLA":"PEARL WHITE","BLANCO NIEVE":"SNOW WHITE",
+            "BLANCO":"WHITE",
+            // ── MORADOS / VIOLETAS ───────────────────────────────────────────────
+            "MORADO OSCURO":"DARK PURPLE","MORADO CLARO":"LIGHT PURPLE",
+            "MORADO":"PURPLE","VIOLETA OSCURO":"DARK VIOLET",
+            "VIOLETA":"VIOLET","LILA OSCURO":"DARK LILAC","LILA":"LILAC",
+            "LAVANDA":"LAVENDER","MALVA":"MAUVE","BERENGENA":"EGGPLANT",
+            // ── ROSAS / FUCSIAS ───────────────────────────────────────────────────
+            "ROSA PALO":"DUSTY ROSE","ROSA VIEJO":"OLD ROSE",
+            "ROSA MEXICANO":"HOT PINK","ROSA OSCURO":"DARK PINK",
+            "ROSA PALIDO":"PALE PINK","ROSA SALMON":"SALMON PINK",
+            "ROSA":"PINK","FUCSIA":"FUCHSIA","MAGENTA":"MAGENTA",
+            // ── NARANJAS ─────────────────────────────────────────────────────────
+            "NARANJA QUEMADO":"BURNT ORANGE","NARANJA CALABAZA":"PUMPKIN ORANGE",
+            "NARANJA CORAL":"CORAL ORANGE","NARANJA":"ORANGE",
+            // ── AMARILLOS ─────────────────────────────────────────────────────────
+            "AMARILLO MOSTAZA":"MUSTARD YELLOW","AMARILLO OCRE":"OCHRE YELLOW",
+            "AMARILLO LIMON":"LEMON YELLOW","AMARILLO DORADO":"GOLDEN YELLOW",
+            "AMARILLO":"YELLOW","MOSTAZA":"MUSTARD","OCRE":"OCHRE",
+            // ── BEIGES / NEUTROS ─────────────────────────────────────────────────
+            "BEIGE CLARO":"LIGHT BEIGE","BEIGE OSCURO":"DARK BEIGE",
+            "BEIGE ARENA":"SAND BEIGE","BEIGE":"BEIGE",
+            "CREMA":"CREAM","MARFIL":"IVORY","IVORY":"IVORY","HUESO":"BONE",
+            "CHAMPAGNE":"CHAMPAGNE","ARENA":"SAND","CANELA":"CINNAMON",
+            // ── DORADOS / PLATEADOS ──────────────────────────────────────────────
+            "DORADO":"GOLD","PLATEADO":"SILVER","PLATA":"SILVER",
+            "BRONCE":"BRONZE","COBRE":"COPPER",
+            // ── TERRACOTA / TIERRA ───────────────────────────────────────────────
+            "TERRACOTA":"TERRACOTTA","LADRILLO":"BRICK",
+            "TABACO":"TOBACCO","CHOCOLATE":"CHOCOLATE","MOCA":"MOCHA",
+            "CARBON":"CHARCOAL","ANTRACITA":"ANTHRACITE",
+            "CAMEL":"CAMEL","KHAKI":"KHAKI","CAQUI":"KHAKI",
+            // ── OTROS COLORES ─────────────────────────────────────────────────────
+            "TURQUESA":"TURQUOISE","AQUA":"AQUA","TEAL":"TEAL",
+            "SALMON":"SALMON","CORAL":"CORAL","ESMERALDA":"EMERALD",
+            "COBALTO":"COBALT","INDIGO":"INDIGO","PETROLEO":"PETROLEUM",
+            "OLIVO":"OLIVE","PERLA":"PEARL","PIZARRA":"SLATE",
+            "MENTA":"MINT","JADE":"JADE","LIMA":"LIME",
+            "DENIM":"DENIM","CELESTE":"SKY BLUE",
+            // ── TEJIDOS Y MATERIALES ─────────────────────────────────────────────
+            "SUPER 120":"SUPER 120","SUPER 100":"SUPER 100",
+            "SUPER 130":"SUPER 130","SUPER 150":"SUPER 150",
+            "POLIESTER":"POLYESTER","VISCOSA":"VISCOSE",
+            "RAYON":"RAYON","LANA VIRGEN":"VIRGIN WOOL","LANA":"WOOL",
+            "ALGODON":"COTTON","ELASTANO":"ELASTANE","SPANDEX":"SPANDEX",
+            "LYCRA":"LYCRA","LINO":"LINEN","SEDA":"SILK","NYLON":"NYLON",
+            "ACRILICO":"ACRYLIC","CASHMERE":"CASHMERE","CACHEMIRA":"CASHMERE",
+            "MOHAIR":"MOHAIR","TERCIOPELO":"VELVET","SATEN":"SATIN",
+            "TWEED":"TWEED","GABARDINA":"GABARDINE","FRESCO":"TROPICAL WOOL",
+            "MICROFIBRA":"MICROFIBER","POLIAMIDA":"POLYAMIDE",
+            // ── CONECTORES ───────────────────────────────────────────────────────
+            "CON":"WITH","Y":"AND","DE":"OF"
         };
+
+        // Mapa de normalización de acentos
+        const _normMap = {"Á":"A","É":"E","Í":"I","Ó":"O","Ú":"U","Ü":"U","Ñ":"N",
+                          "á":"a","é":"e","í":"i","ó":"o","ú":"u","ü":"u","ñ":"n"};
+        function _norm(str) {
+            return str.replace(/[ÁÉÍÓÚÜÑáéíóúüñ]/g, c => _normMap[c] || c).toUpperCase();
+        }
+
+        // Entradas ordenadas de mayor a menor longitud → frases compuestas tienen prioridad
+        const _entradasOrdenadas = Object.entries(traducciones)
+            .map(([es, en]) => [_norm(es), en])
+            .sort((a, b) => b[0].length - a[0].length);
+
         function traducir(texto) {
-            let resultado = texto.toUpperCase();
-            for (let [es, en] of Object.entries(traducciones)) {
-                let regex = new RegExp(`\\b${es}\\b`, 'gi');
-                resultado = resultado.replace(regex, en);
-            }
-            return resultado;
+            let s = _norm(texto);
+            // Reemplaza cada entrada usando marcadores temporales @@N@@ para evitar
+            // que una traducción ya hecha sea procesada de nuevo
+            const marcadores = [];
+            _entradasOrdenadas.forEach(([es, en]) => {
+                // Construir regex con límite de palabra compatible con español normalizado
+                const escaped = es.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp('(?<![A-Z0-9])' + escaped + '(?![A-Z0-9])', 'g');
+                s = s.replace(regex, () => {
+                    const idx = marcadores.length;
+                    marcadores.push(en);
+                    return `@@${idx}@@`;
+                });
+            });
+            // Restaurar marcadores
+            s = s.replace(/@@(\d+)@@/g, (_, i) => marcadores[parseInt(i)]);
+            return s;
         }
 
         let codigoZPLFinal_monarch = '';
