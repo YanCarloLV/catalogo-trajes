@@ -208,15 +208,13 @@
         </div>
     </div>
 
-    <!-- MÓDULO 2 Y 3 (Sin cambios, para no hacer el código inmenso en la respuesta visual. Asumimos que los mantienes idénticos a tu versión anterior) -->
-    <!-- SI LOS BORRAS EN TU CÓDIGO, CÓPIALOS DE LA VERSIÓN ANTERIOR. SOLO SUSTITUIMOS EL MODULO 1 Y EL SCRIPT -->
-    
+
     <script>
+
         // =========================================================================
-        // CONFIGURACIÓN DE GITHUB (Carga Automática de Base de Datos Odoo)
+        // CONFIGURACIÓN DE GITHUB - PEGA TU ENLACE RAW AQUÍ
         // =========================================================================
-        // PEGA AQUÍ TU ENLACE RAW DE GITHUB (ej. https://raw.githubusercontent.com/usuario/repo/main/odoo.xlsx)
-        const GITHUB_EXCEL_URL = "https://github.com/YanCarloLV/catalogo-trajes/blob/981b786c7d5b3d9523dad309286577f6bc76fae6/Base%20de%20datos.xlsx"; 
+        const GITHUB_EXCEL_URL = "https://github.com/YanCarloLV/catalogo-trajes/raw/refs/heads/main/Base%20de%20datos.xlsx"
 
         function abrirPestana(idTab, btn) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -229,11 +227,18 @@
             const ipNylon = localStorage.getItem('zebraIP_Nylon');
             if(ipNylon) document.getElementById('ipImpresora_monarch').value = ipNylon;
 
-            // INTENTAR CARGAR DB DE GITHUB AUTOMÁTICAMENTE
             if(GITHUB_EXCEL_URL && GITHUB_EXCEL_URL.startsWith('http')) {
-                document.getElementById('contenedorSubida_monarch').innerHTML = '<h3 style="color: #0ea5e9; text-align: center;">☁️ Descargando Base de Datos desde GitHub...</h3>';
-                fetch(GITHUB_EXCEL_URL)
-                    .then(res => res.arrayBuffer())
+                const loaderStatus = document.getElementById('contenedorSubida_monarch');
+                loaderStatus.innerHTML = '<h3 style="color: #0ea5e9; text-align: center;">☁️ Conectando con GitHub...</h3>';
+                
+                // Agregamos un cache-buster para que siempre traiga la versión más nueva
+                const finalUrl = GITHUB_EXCEL_URL + "?t=" + new Date().getTime();
+
+                fetch(finalUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Error al descargar: ' + res.statusText);
+                        return res.arrayBuffer();
+                    })
                     .then(data => {
                         const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
                         const primeraHoja = workbook.Sheets[workbook.SheetNames[0]];
@@ -241,12 +246,17 @@
                         procesarBaseDatosOdoo(filas);
                     })
                     .catch(err => {
-                        console.error("Error al cargar GitHub", err);
-                        alert("No se pudo cargar la BD de GitHub. Usa la subida manual.");
-                        location.reload(); // Recarga para volver a mostrar botones manuales
+                        console.error("Error detallado:", err);
+                        loaderStatus.innerHTML = `
+                            <div style="background:#fee2e2; border:1px solid #ef4444; padding:15px; border-radius:8px; text-align:center;">
+                                <p style="color:#b91c1c; font-weight:bold; margin:0;">❌ Error al cargar BD de GitHub</p>
+                                <p style="font-size:0.8rem; color:#7f1d1d;">Verifica que el link sea "Raw" y el archivo sea .xls o .xlsx</p>
+                                <button onclick="location.reload()" style="margin-top:10px; padding:5px 10px; cursor:pointer;">Reintentar</button>
+                            </div>`;
                     });
             }
         };
+
 
         const traducciones = {
             "NEGRO": "BLACK", "MARINO": "NAVY", "GRIS": " GREY OXFORD", "GRIS MEDIO": "LIGHT GREY", "VERDE HUNTER": "HUNTER GREEN", "VERDE": "GREEN", "AZUL NOCHE": "BLUE NIGHT", "AZUL REY": "ROYAL BLUE", "AZUL FRANCIA": "BLUE FRANCE", "ROJO": "RED", "VINO": "BURGUNDY", "BLANCO": "WHITE", "CAFE": "BROWN", "BEIGE": "BEIGE", "MOSTAZA": "MUSTARD", "POLIESTER": "POLYESTER", "POLIÉSTER": "POLYESTER", "VISCOSA": "VISCOSE", "LANA": "WOOL", "ALGODON": "COTTON", "ALGODÓN": "COTTON", "ELASTANO": "ELASTANE", "SPANDEX": "SPANDEX", "LINO": "LINEN", "SEDA": "SILK"
