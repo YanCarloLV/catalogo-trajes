@@ -87,12 +87,35 @@
     </style>
 </head>
 <body>
+<!-- ==========================================
+         ENCABEZADO UNIFICADO (HUB + PESTAÑAS)
+         ========================================== -->
+    <div style="width: 100%; background-color: #1f2937; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); margin-bottom: 30px;">
+        
+        <!-- Fila superior: Logo y Accesos Directos -->
+        <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div style="color: #0ea5e9; font-weight: bold; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px;">
+                👔 Luciano Ferreti Hub
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <a href="Creador%20de%20Cat%C3%A1logos.html" style="color: #f9fafb; text-decoration: none; font-size: 0.9rem; font-weight: bold; padding: 8px 16px; border-radius: 6px; background-color: #374151; border: 1px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.backgroundColor='#4b5563'; this.style.borderColor='#6b7280';" onmouseout="this.style.backgroundColor='#374151'; this.style.borderColor='transparent';">
+                    📖 Creador de Catálogos
+                </a>
+                <a href="Unidor%20de%20Cat%C3%A1logos.html" style="color: #f9fafb; text-decoration: none; font-size: 0.9rem; font-weight: bold; padding: 8px 16px; border-radius: 6px; background-color: #374151; border: 1px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.backgroundColor='#4b5563'; this.style.borderColor='#6b7280';" onmouseout="this.style.backgroundColor='#374151'; this.style.borderColor='transparent';">
+                    🔗 Unidor de Catálogos
+                </a>
+            </div>
+        </div>
 
-    <div class="tabs-container">
-        <button class="tab-btn active" onclick="abrirPestana('tab-monarch', this)">🏷️ 1. MONARCH NYLON</button>
-        <button class="tab-btn" onclick="abrirPestana('tab-recibo', this)">🧾 2. RECIBO ODOO</button>
-        <button class="tab-btn" onclick="abrirPestana('tab-tienda', this)">🛍️ 3. TIENDA COLLECTION</button>
+        <!-- Fila inferior: Pestañas del Sistema -->
+        <!-- NOTA: Se añaden estilos en línea para anular la sombra duplicada y fusionarlo con la barra de arriba -->
+        <div class="tabs-container" style="box-shadow: none; margin-bottom: 0; background-color: transparent;">
+            <button class="tab-btn active" onclick="abrirPestana('tab-monarch', this)">🏷️ 1. MONARCH NYLON</button>
+            <button class="tab-btn" onclick="abrirPestana('tab-recibo', this)">🧾 2. RECIBO ODOO</button>
+            <button class="tab-btn" onclick="abrirPestana('tab-tienda', this)">🛍️ 3. TIENDA COLLECTION</button>
+        </div>
     </div>
+    <!-- ========================================== -->
 
     <!-- ==========================================
          MÓDULO 1: MONARCH (NYLON)
