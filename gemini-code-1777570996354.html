@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luciano Ferretti - Unidor de Catálogos</title>
+    <!-- Librería potente para manipular PDFs directamente en el navegador -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- Librería para permitir el arrastre y orden de archivos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --naranja: #FF6600; --negro: #1a1a1a; }
+        body { font-family: 'Montserrat', sans-serif; background: #222; color: white; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+        
+        .container { width: 100%; max-width: 800px; background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        h1 { color: var(--naranja); text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        p { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+
+        /* ZONA DE CARGA */
+        .upload-area { border: 2px dashed #444; padding: 40px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-bottom: 20px; }
+        .upload-area:hover { border-color: var(--naranja); background: #252525; }
+        .upload-area input { display: none; }
+
+        /* LISTA DE ARCHIVOS */
+        #file-list { margin-bottom: 30px; }
+        .file-item { background: #333; margin: 10px 0; padding: 15px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; cursor: grab; border-left: 4px solid var(--naranja); }
+        .file-item:active { cursor: grabbing; }
+        .file-info { display: flex; align-items: center; gap: 15px; }
+        .file-index { background: var(--naranja); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        
+        .remove-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        
+        /* BOTÓN FINAL */
+        .btn-merge { width: 100%; background: var(--naranja); color: white; border: none; padding: 18px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        .btn-merge:disabled { background: #444; cursor: not-allowed; }
+        .status { text-align: center; margin-top: 15px; font-size: 14px; color: var(--naranja); display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Unidor de Catálogos</h1>
+        <p>Ordena tus bloques de fichas y portadas para crear el archivo maestro</p>
+
+        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <span style="font-size: 40px;">📂</span>
+            <br>
+            <strong>Haz clic para seleccionar tus archivos PDF</strong>
+            <input type="file" id="file-input" accept="application/pdf" multiple onchange="handleFiles(this.files)">
+        </div>
+
+        <div id="file-list">
+            <!-- Los archivos aparecerán aquí -->
+        </div>
+
+        <button class="btn-merge" id="merge-btn" disabled onclick="mergePDFs()">Unificar y Descargar PDF Maestro</button>
+        <div class="status" id="status-text">Procesando documentos, por favor espera...</div>
+    </div>
+
+    <script>
+        let pdfFiles = [];
+        const fileListElement = document.getElementById('file-list');
+        const mergeBtn = document.getElementById('merge-btn');
+
+        // Configurar el ordenamiento por arrastre
+        const sortable = new Sortable(fileListElement, {
+            animation: 150,
+            onEnd: () => {
+                // Actualizar el array interno según el nuevo orden visual
+                const newOrder = [];
+                const items = fileListElement.querySelectorAll('.file-item');
+                items.forEach(item => {
+                    const index = parseInt(item.getAttribute('data-id'));
+                    newOrder.push(pdfFiles[index]);
+                });
+                pdfFiles = newOrder;
+                renderList();
+            }
+        });
+
+        function handleFiles(files) {
+            for (let file of files) {
+                pdfFiles.push(file);
+            }
+            renderList();
+        }
+
+        function removeFile(index) {
+            pdfFiles.splice(index, 1);
+            renderList();
+        }
+
+        function renderList() {
+            fileListElement.innerHTML = '';
+            pdfFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.setAttribute('data-id', index);
+                item.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-index">${index + 1}</div>
+                        <span>${file.name}</span>
+                    </div>
+                    <button class="remove-btn" onclick="removeFile(${index})">Eliminar</button>
+                `;
+                fileListElement.appendChild(item);
+            });
+            mergeBtn.disabled = pdfFiles.length < 2;
+        }
+
+        async function mergePDFs() {
+            const statusText = document.getElementById('status-text');
+            statusText.style.display = 'block';
+            mergeBtn.disabled = true;
+
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (const file of pdfFiles) {
+                    const fileArrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(fileArrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'CATALOGO_MAESTRO_LUCIANO_FERRETTI.pdf';
+                link.click();
+
+                statusText.style.display = 'none';
+                mergeBtn.disabled = false;
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un error al unir los PDFs. Asegúrate de que los archivos no estén protegidos.");
+                statusText.style.display = 'none';
+                mergeBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
