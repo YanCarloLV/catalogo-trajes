@@ -1307,10 +1307,13 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
                 let itemAbajo = itemsParaImprimir_tienda[i + 1]; 
                 let zpl = `~SD27\n^XA^CI28^PR3\n`;
                 
-                function dibujarBloque(item, yOffset) {
+function dibujarBloque(item, yOffset) {
                     let pFormateado = isNaN(item.precio) ? item.precio : item.precio.toLocaleString('en-US');
                     let bloque = `^FO10,${yOffset + 20}^A0N,22^FB380,1,0,C^FD${item.desc}^FS\n`; 
-                    bloque += `^BY2,2,40\n^FO40,${yOffset + 50}^BCN,40,N,N,N^FD${item.barcode}^FS\n`; 
+                    
+                    // CORRECCIÓN AQUÍ: Cambiamos ^FO40 por ^FO15 para recorrerlo a la izquierda
+                    bloque += `^BY2,2,40\n^FO15,${yOffset + 50}^BCN,40,N,N,N^FD${item.barcode}^FS\n`; 
+                    
                     bloque += `^FO0,${yOffset + 95}^A0N,20^FB400,1,0,C^FD${item.barcode}^FS\n`; 
                     bloque += `^FO0,${yOffset + 120}^A0N,26^FB400,1,0,C^FDPRECIO $${pFormateado}.00 MX^FS\n`; 
                     return bloque;
