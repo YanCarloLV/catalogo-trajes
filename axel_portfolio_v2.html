@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A1628">
+<title>Axel Lopez Vazquez — Portafolio Dinámico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* =============================================
+   VARIABLES
+============================================= */
+:root {
+  --navy:#0A1628; --navy-mid:#0D1F3C; --navy-light:#162444;
+  --orange:#F5881F; --orange-dim:#c46a0e; --gold:#E8C94E;
+  --white:#F8F9FC; --muted:#8B9BBF;
+  --card-bg:rgba(22,36,68,0.9); --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.09);
+  --green:#27AE60; --red:#E74C3C; --blue:#3498DB;
+  --radius:16px; --shadow:0 20px 60px rgba(0,0,0,0.5);
+  --ios-safe-top:env(safe-area-inset-top,0px);
+  --ios-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+/* =============================================
+   RESET & BASE
+============================================= */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);overflow-x:hidden;}
+body.is-mobile{cursor:auto;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--navy);}
+::-webkit-scrollbar-thumb{background:rgba(245,136,31,.4);border-radius:3px;}
+/* =============================================
+   CURSOR (desktop only)
+============================================= */
+#cur,#cur-ring{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);border-radius:50%;transition:width .2s,height .2s;}
+#cur{width:11px;height:11px;background:var(--orange);mix-blend-mode:difference;}
+#cur-ring{width:34px;height:34px;border:1.5px solid var(--orange);opacity:.55;transition:transform .12s ease,width .2s,height .2s;}
+body.is-mobile #cur,body.is-mobile #cur-ring{display:none;}
+/* =============================================
+   NOISE & CANVAS
+============================================= */
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.25;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");}
+#pc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.35;}
+/* =============================================
+   NAVIGATION — DESKTOP
+============================================= */
+nav#deskNav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 48px;
+  background:rgba(10,22,40,.82);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--glass-border);
+  transition:padding .3s;
+}
+nav#deskNav.scrolled{padding:12px 48px;}
+.nav-logo{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:900;color:var(--white);}
+.nav-logo span{color:var(--orange);}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{font-size:.8rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--orange);}
+.nav-cta{background:var(--orange);color:var(--navy);padding:9px 20px;border-radius:999px;font-size:.8rem;font-weight:700;text-decoration:none;transition:background .2s,transform .15s;}
+.nav-cta:hover{background:var(--gold);transform:scale(1.04);}
+body.is-mobile nav#deskNav{display:none;}
+/* =============================================
+   NAVIGATION — MOBILE iOS STYLE
+============================================= */
+nav#mobileNav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:1000;
+  background:rgba(10,22,40,.95);
+  backdrop-filter:blur(30px);
+  -webkit-backdrop-filter:blur(30px);
+  border-top:0.5px solid rgba(255,255,255,.12);
+  padding:10px 0 calc(10px + var(--ios-safe-bottom));
+  flex-direction:row;justify-content:space-around;align-items:center;
+}
+body.is-mobile nav#mobileNav{display:flex;}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:var(--muted);font-size:.65rem;font-weight:600;letter-spacing:.04em;padding:4px 12px;transition:color .2s;}
+.mob-nav-item.active,.mob-nav-item:active{color:var(--orange);}
+.mob-nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+/* =============================================
+   HERO
+============================================= */
+#hero{
+  position:relative;z-index:2;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:140px 24px 80px;overflow:hidden;
+}
+body.is-mobile #hero{padding:100px 20px 100px;}
+.hero-glow{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(245,136,31,.13) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:breathe 4s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.18);}}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,136,31,.11);border:1px solid rgba(245,136,31,.3);color:var(--orange);padding:8px 18px;border-radius:999px;font-size:.76rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:28px;animation:fadeInDown .7s ease both;}
+.hero-badge::before{content:'';width:7px;height:7px;background:var(--orange);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,136,31,.6);}50%{box-shadow:0 0 0 8px rgba(245,136,31,0);}}
+.hero-name{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,8vw,7rem);font-weight:900;line-height:1;letter-spacing:-3px;margin-bottom:14px;animation:fadeInUp .8s .1s ease both;}
+.hero-name .first{color:var(--white);}
+.hero-name .last{color:transparent;-webkit-text-stroke:2px var(--orange);display:block;}
+.hero-title{font-size:clamp(.95rem,2.2vw,1.3rem);font-weight:300;color:var(--muted);letter-spacing:.04em;margin-bottom:36px;animation:fadeInUp .8s .2s ease both;}
+.hero-title em{color:var(--orange);font-style:normal;font-weight:600;}
+.hero-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:44px;animation:fadeInUp .8s .3s ease both;}
+.chip{background:var(--glass);border:1px solid var(--glass-border);padding:7px 16px;border-radius:999px;font-size:.75rem;font-weight:500;color:var(--muted);transition:all .2s;}
+.chip:hover{background:rgba(245,136,31,.1);border-color:var(--orange);color:var(--orange);}
+.scroll-hint{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;animation:fadeIn 1.5s 1s ease both;}
+.scroll-hint span{font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.scroll-line{width:1px;height:44px;background:linear-gradient(to bottom,var(--orange),transparent);animation:scrollAnim 1.5s infinite;}
+@keyframes scrollAnim{0%{transform:scaleY(0);transform-origin:top;}50%{transform:scaleY(1);transform-origin:top;}51%{transform:scaleY(1);transform-origin:bottom;}100%{transform:scaleY(0);transform-origin:bottom;}}
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+/* =============================================
+   SECTION COMMON
+============================================= */
+section{position:relative;z-index:2;padding:90px 48px;max-width:1280px;margin:0 auto;}
+body.is-mobile section{padding:60px 20px;}
+.sep{height:1px;background:linear-gradient(to right,transparent,rgba(245,136,31,.2),transparent);margin:0 48px;position:relative;z-index:2;}
+body.is-mobile .sep{margin:0 20px;}
+.section-tag{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--orange);letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;display:block;}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:18px;}
+.section-title em{font-style:italic;color:var(--orange);}
+.section-divider{width:56px;height:3px;background:linear-gradient(to right,var(--orange),transparent);margin-bottom:44px;border-radius:2px;}
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+/* =============================================
+   ABOUT
+============================================= */
+#about{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;}
+body.is-mobile #about{grid-template-columns:1fr;gap:36px;}
+.about-p{color:var(--muted);line-height:1.9;margin-bottom:22px;font-size:1.03rem;}
+.about-p strong{color:var(--white);}
+.about-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+body.is-mobile .about-stats{grid-template-columns:1fr 1fr;}
+.stat-box{background:var(--card-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:24px 20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
+.stat-box:hover{transform:translateY(-3px);border-color:var(--orange);}
+.stat-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--orange),transparent);}
+.stat-number{font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:900;color:var(--orange);line-height:1;margin-bottom:5px;}
+.stat-label{font-size:.75rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+/* =============================================
+   FILOSOFIA
+============================================= */
+#filosofia-wrap{padding:0 48px;max-width:1328px;margin:0 auto;position:relative;z-index:2;}
+body.is-mobile #filosofia-wrap{padding:0 20px;}
+#filosofia{background:var(--card-bg);border:1px solid var(--glass-border);border-radius:24px;padding:64px;overflow:hidden;}
+body.is-mobile #filosofia{padding:32px 24px;}
+.fil-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:72px;align-items:center;margin-top:44px;}
+body.is-mobile .fil-grid{grid-template-columns:1fr;gap:36px;}
+.fil-cards{display:flex;flex-direction:column;gap:14px;}
+.fil-card{display:flex;align-items:flex-start;gap:14px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:12px;padding:18px 20px;transition:all .2s;}
+.fil-card:hover{background:rgba(245,136,31,.06);border-color:rgba(245,136,31,.3);transform:translateX(5px);}
+.fil-icon{font-size:1.5rem;min-width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:rgba(245,136,31,.1);border-radius:9px;}
+.fil-text h4{font-size:.92rem;font-weight:700;margin-bottom:3px;color:var(--white);}
+.fil-text p{font-size:.82rem;color:var(--muted);line-height:1.6;}
+/* AI Terminal */
+.ai-terminal{background:#0D1117;border-radius:12px;border:1px solid rgba(255,255,255,.09);overflow:hidden;font-family:'Space Mono',monospace;}
+.ai-terminal-header{display:flex;align-items:center;gap:7px;padding:11px 15px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.06);}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot.r{background:#FF5F57;}.dot.y{background:#FFBD2E;}.dot.g{background:#28CA41;}
+.ai-terminal-body{padding:18px;min-height:260px;max-height:320px;overflow-y:auto;}
+.tline{font-size:.72rem;line-height:1.85;}
+.t-prompt{color:var(--orange);}.t-cmd{color:#89DDFF;}.t-out{color:#C3E88D;}.t-muted{color:#546E7A;}
+.t-cur{display:inline-block;width:7px;height:13px;background:var(--orange);vertical-align:middle;animation:blink 1s step-end infinite;}
+@keyframes blink{50%{opacity:0;}}
+/* =============================================
+   TIMELINE
+============================================= */
+#experiencia{max-width:1280px;margin:0 auto;}
+.timeline{position:relative;padding-left:28px;}
+.timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--orange),transparent);}
+.tl-item{position:relative;margin-bottom:50px;padding-left:36px;}
+.tl-item::before{content:'';position:absolute;left:-37px;top:7px;width:13px;height:13px;border-radius:50%;background:var(--orange);border:3px solid var(--navy);box-shadow:0 0 0 3px rgba(245,136,31,.3);}
+.tl-item.current::before{animation:pulse-ring 1.5s infinite;}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 3px rgba(245,136,31,.3);}50%{box-shadow:0 0 0 9px rgba(245,136,31,0);}100%{box-shadow:0 0 0 3px rgba(245,136,31,.3);}}
+.tl-period{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--orange);letter-spacing:.09em;margin-bottom:7px;}
+.tl-role{font-size:1.25rem;font-weight:700;color:var(--white);margin-bottom:3px;}
+.tl-company{font-size:.88rem;color:var(--muted);margin-bottom:18px;}
+.tl-company strong{color:var(--orange);}
+.tl-bullets{list-style:none;}
+.tl-bullets li{display:flex;gap:9px;align-items:flex-start;font-size:.86rem;color:var(--muted);line-height:1.7;margin-bottom:9px;}
+.tl-bullets li::before{content:'▸';color:var(--orange);min-width:11px;margin-top:2px;}
+.tl-bullets li strong{color:var(--white);}
+.tl-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+.ttag{font-size:.7rem;padding:4px 11px;border-radius:999px;background:rgba(245,136,31,.08);border:1px solid rgba(245,136,31,.2);color:var(--orange);font-weight:600;}
+.mic-badge{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,rgba(245,136,31,.15),rgba(232,201,78,.1));border:1px solid rgba(245,136,31,.4);border-radius:7px;padding:7px 13px;margin-bottom:14px;font-size:.78rem;font-weight:700;color:var(--orange);}
+/* =============================================
+   PROJECT CARDS
+============================================= */
+#proyectos{max-width:1280px;margin:0 auto;}
+.proj-intro{max-width:620px;margin-bottom:56px;}
+.proj-intro p{color:var(--muted);line-height:1.8;font-size:.97rem;}
+.proj-card{background:var(--card-bg);border:1px solid var(--glass-border);border-radius:20px;overflow:hidden;margin-bottom:72px;transition:border-color .3s,box-shadow .3s;}
+.proj-card:hover{border-color:rgba(245,136,31,.4);box-shadow:0 0 55px rgba(245,136,31,.08);}
+.proj-header{display:flex;align-items:flex-start;justify-content:space-between;padding:36px 40px 0;gap:20px;flex-wrap:wrap;}
+body.is-mobile .proj-header{padding:24px 20px 0;flex-direction:column;}
+.proj-meta{flex:1;min-width:240px;}
+.proj-num{font-family:'Playfair Display',serif;font-size:4.5rem;font-weight:900;color:rgba(245,136,31,.08);line-height:1;margin-bottom:-14px;-webkit-text-stroke:1px rgba(245,136,31,.12);}
+.proj-name{font-family:'Playfair Display',serif;font-size:clamp(1.3rem,2.8vw,1.85rem);font-weight:900;color:var(--white);margin-bottom:9px;line-height:1.2;}
+.proj-desc{font-size:.9rem;color:var(--muted);line-height:1.75;}
+.proj-impact{display:flex;flex-direction:column;gap:9px;min-width:190px;}
+.impact-pill{padding:7px 15px;border-radius:999px;font-size:.75rem;font-weight:700;text-align:center;letter-spacing:.04em;}
+.ip-green{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:#2ecc71;}
+.ip-orange{background:rgba(245,136,31,.1);border:1px solid rgba(245,136,31,.3);color:var(--orange);}
+.ip-blue{background:rgba(52,152,219,.1);border:1px solid rgba(52,152,219,.3);color:#5dade2;}
+.proj-tech{display:flex;flex-wrap:wrap;gap:7px;padding:0 40px 22px;}
+body.is-mobile .proj-tech{padding:0 20px 18px;}
+.tech-chip{font-family:'Space Mono',monospace;font-size:.68rem;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);color:var(--muted);padding:4px 11px;border-radius:6px;}
+/* =============================================
+   DEMO WINDOWS
+============================================= */
+.demo-win{margin:0 40px 40px;border-radius:13px;overflow:hidden;border:1px solid rgba(255,255,255,.09);box-shadow:var(--shadow);position:relative;}
+body.is-mobile .demo-win{margin:0 20px 24px;}
+.demo-bar{display:flex;align-items:center;gap:8px;background:#1a1a2e;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.demo-bar .dot{width:9px;height:9px;border-radius:50%;}
+.demo-bar-title{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);margin-left:6px;flex:1;}
+.demo-bar-actions{display:flex;gap:7px;}
+.demo-btn{background:rgba(245,136,31,.1);border:1px solid rgba(245,136,31,.3);color:var(--orange);padding:5px 13px;border-radius:7px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;letter-spacing:.04em;}
+.demo-btn:hover{background:rgba(245,136,31,.2);}
+.demo-btn:active{transform:scale(.97);}
+.demo-body{background:#0f1923;}
+/* =============================================
+   WMS DEMO STYLES
+============================================= */
+.wms-wrap{display:grid;grid-template-columns:200px 1fr;min-height:400px;}
+body.is-mobile .wms-wrap{grid-template-columns:1fr;}
+.wms-sidebar{background:#080e1a;border-right:1px solid rgba(255,255,255,.06);padding:14px 0;}
+.wms-sidebar-logo{text-align:center;padding:0 14px 14px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:10px;}
+.wms-sidebar-logo span{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:900;color:var(--orange);}
+.wms-nav-item{padding:9px 18px;font-size:.76rem;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:9px;border-left:3px solid transparent;transition:all .14s;user-select:none;}
+.wms-nav-item:hover,.wms-nav-item.active{background:rgba(245,136,31,.08);color:var(--orange);border-left-color:var(--orange);}
+body.is-mobile .wms-sidebar{display:none;}
+.wms-main{overflow-y:auto;padding:18px;}
+.wms-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.wms-page-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--white);}
+.wms-btns{display:flex;gap:7px;flex-wrap:wrap;}
+.wbtn{font-size:.7rem;padding:6px 13px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.wbtn:active{transform:scale(.96);}
+.wbtn.g{background:#27ae60;color:#fff;}.wbtn.o{background:var(--orange);color:var(--navy);}
+.wbtn.n{background:var(--navy);color:var(--white);border:1px solid var(--glass-border);}
+.wbtn.gh{background:transparent;color:var(--orange);border:1px solid rgba(245,136,31,.4);}
+.wms-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+body.is-mobile .wms-kpis{grid-template-columns:repeat(2,1fr);}
+.kpi{background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:9px;padding:12px 14px;}
+.kpi-l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.kpi-v{font-size:1.35rem;font-weight:700;color:var(--white);line-height:1;}
+.kpi-v.ora{color:var(--orange);}.kpi-v.gr{color:#27ae60;}.kpi-v.bl{color:#3498db;}
+.wms-search{width:100%;padding:9px 14px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:9px;color:var(--white);font-size:.8rem;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:12px;transition:border-color .2s;}
+.wms-search:focus{border-color:var(--orange);}
+.wms-table-wrap{background:rgba(255,255,255,.02);border-radius:9px;overflow:hidden;border:1px solid var(--glass-border);}
+.wms-table{width:100%;border-collapse:collapse;font-size:.74rem;}
+.wms-table th{background:rgba(255,255,255,.04);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-size:.63rem;padding:9px 13px;text-align:left;}
+.wms-table td{padding:8px 13px;color:var(--white);border-top:1px solid rgba(255,255,255,.04);font-weight:500;}
+.wms-table tr:hover td{background:rgba(245,136,31,.04);cursor:pointer;}
+.sp{padding:3px 9px;border-radius:999px;font-size:.63rem;font-weight:700;display:inline-block;}
+.sp.pend{background:rgba(232,201,78,.15);color:var(--gold);}
+.sp.done{background:rgba(39,174,96,.15);color:#27ae60;}
+.sp.prog{background:rgba(52,152,219,.15);color:#3498db;}
+/* WMS Slide Panel */
+.wms-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:50;backdrop-filter:blur(3px);}
+.wms-overlay.show{display:block;}
+.wms-panel{position:absolute;top:0;right:-400px;width:100%;max-width:360px;height:100%;background:#0f1923;border-left:1px solid var(--glass-border);z-index:51;transition:right .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+.wms-panel.open{right:0;}
+.wms-panel-header{padding:20px 22px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:flex-start;}
+.wms-panel-body{padding:20px 22px;overflow-y:auto;flex:1;}
+.wms-panel-footer{padding:16px 22px;border-top:1px solid var(--glass-border);display:none;}
+.wms-panel-footer.show{display:block;}
+/* Pills */
+.pills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:9px;margin-top:14px;}
+.pill{background:rgba(255,255,255,.04);border:2px solid var(--glass-border);border-radius:11px;padding:11px 5px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;}
+.pill:hover{border-color:var(--orange);transform:translateY(-2px);}
+.pill.active{background:var(--navy-mid);border-color:var(--orange);box-shadow:0 6px 18px rgba(245,136,31,.2);}
+.pill-talla{font-size:1.05rem;font-weight:800;color:var(--white);line-height:1.2;}
+.pill-qty{font-size:.72rem;color:var(--orange);font-weight:800;margin-top:3px;}
+.pill.active .pill-talla,.pill.active .pill-qty{color:var(--white);}
+.pill.zero{opacity:.4;cursor:not-allowed;}
+.lote-card{background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:11px;padding:16px;margin-bottom:14px;}
+.lote-label{font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.lote-name{font-size:.95rem;font-weight:700;color:var(--white);}
+/* Action box */
+.wms-act-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.wms-act-sel{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.act-talla-label{font-size:.65rem;color:var(--muted);font-weight:800;text-transform:uppercase;}
+.act-talla-val{font-size:1.4rem;font-weight:800;color:var(--white);}
+/* WMS Toast */
+.wms-toast{position:absolute;top:14px;right:14px;background:rgba(39,174,96,.9);color:#fff;padding:7px 15px;border-radius:8px;font-size:.73rem;font-weight:700;opacity:0;transform:translateY(-8px);pointer-events:none;transition:all .3s;z-index:100;}
+.wms-toast.show{opacity:1;transform:translateY(0);}
+/* =============================================
+   LABEL DEMO STYLES
+============================================= */
+.label-wrap{display:grid;grid-template-columns:1fr 1fr;min-height:420px;}
+body.is-mobile .label-wrap{grid-template-columns:1fr;}
+.label-left{padding:22px;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto;}
+body.is-mobile .label-left{border-right:none;border-bottom:1px solid rgba(255,255,255,.06);}
+.label-right{padding:22px;background:#0a0f18;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.label-section-title{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;}
+.label-form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
+.label-form-label{font-size:.7rem;color:var(--muted);}
+.label-form-input{background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:8px;padding:8px 12px;color:var(--white);font-size:.8rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.label-form-input:focus{border-color:var(--orange);}
+.cat-grid-label{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;max-height:240px;overflow-y:auto;}
+.cat-card-label{border:1px solid var(--glass-border);border-radius:10px;padding:12px;background:rgba(255,255,255,.03);transition:all .2s;cursor:pointer;}
+.cat-card-label:hover{border-color:var(--orange);background:rgba(245,136,31,.06);}
+.cat-card-label.selected{border-color:var(--orange);background:rgba(245,136,31,.1);}
+.cat-card-sku{font-size:.65rem;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace;}
+.cat-card-modelo{font-size:.82rem;font-weight:700;color:var(--white);margin-bottom:2px;}
+.cat-card-color{font-size:.72rem;color:var(--muted);}
+.cat-card-talla{font-size:.85rem;font-weight:800;color:var(--orange);}
+.label-queue-table{width:100%;border-collapse:collapse;font-size:.74rem;margin-bottom:14px;}
+.label-queue-table th{color:var(--muted);text-align:left;padding:5px 8px;font-size:.63rem;text-transform:uppercase;}
+.label-queue-table td{padding:7px 8px;border-top:1px solid rgba(255,255,255,.05);color:var(--white);}
+.lbtn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:.8rem;font-family:'DM Sans',sans-serif;transition:all .15s;margin-bottom:8px;display:block;width:100%;}
+.lbtn:active{transform:scale(.97);}
+.lbtn.gr{background:#27ae60;color:#fff;}
+.lbtn.or{background:var(--orange);color:var(--navy);}
+/* Label Preview */
+.label-preview-outer{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.label-preview-card{background:#fff;color:#000;border-radius:7px;padding:18px 15px;font-family:Arial,sans-serif;text-align:center;width:210px;box-shadow:0 8px 28px rgba(0,0,0,.55);}
+.lp-brand{font-size:.63rem;font-weight:700;letter-spacing:.12em;margin-bottom:2px;}
+.lp-size{font-size:1.7rem;font-weight:900;letter-spacing:-1px;margin-bottom:3px;}
+.lp-model{font-size:.65rem;margin-bottom:1px;}
+.lp-color{font-size:.65rem;margin-bottom:1px;}
+.lp-fabric{font-size:.62rem;margin-bottom:7px;}
+.lp-made{font-size:.52rem;color:#444;line-height:1.4;margin-bottom:7px;}
+.lp-icons{display:flex;justify-content:center;gap:4px;font-size:.95rem;}
+.lp-counter{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);}
+.labelary-preview{max-width:200px;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.5);display:none;}
+.labelary-loading{font-size:.78rem;color:var(--muted);padding:20px;text-align:center;}
+/* =============================================
+   CATALOG DEMO STYLES
+============================================= */
+.catalog-demo-wrap{display:grid;grid-template-columns:280px 1fr;min-height:440px;}
+body.is-mobile .catalog-demo-wrap{grid-template-columns:1fr;}
+.catalog-controls{background:#080e1a;border-right:1px solid rgba(255,255,255,.06);padding:20px;overflow-y:auto;}
+.catalog-preview-area{padding:0;display:flex;align-items:center;justify-content:center;background:#2a2a2a;overflow:auto;}
+.cat-input-group{margin-bottom:13px;}
+.cat-input-label{font-size:.68rem;color:var(--orange);font-weight:700;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px;}
+.cat-input{width:100%;padding:8px 10px;background:#222;border:1px solid #444;color:#fff;border-radius:5px;font-size:.8rem;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;}
+.cat-input:focus{border-color:var(--orange);}
+.cat-color-box{background:#222;padding:10px;border-radius:6px;margin-bottom:10px;border:1px solid #444;}
+.cat-color-title{font-size:.68rem;color:var(--gold);font-weight:700;margin-bottom:6px;text-transform:uppercase;}
+.cat-export-btn{background:var(--gold);color:#111;border:none;padding:11px;border-radius:5px;cursor:pointer;font-weight:700;width:100%;margin-top:8px;font-size:.82rem;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.cat-export-btn:hover{opacity:.9;}
+.cat-export-btn:active{transform:scale(.97);}
+/* Catalog document preview */
+#cat-doc{width:800px;min-height:600px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.5);box-sizing:border-box;display:flex;flex-direction:column;}
+.cat-doc-header{background:#181818;color:#fff;padding:16px 28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #FF6600;}
+.cat-brand h1{font-family:'Playfair Display',serif;font-size:28px;margin:0;letter-spacing:2px;color:#FF6600;line-height:1;}
+.cat-brand p{font-size:9px;letter-spacing:4px;opacity:.7;margin:4px 0 0;}
+.cat-meta{text-align:right;}
+.cat-meta h2{font-size:18px;margin:0;font-weight:700;border-bottom:2px solid #FF6600;padding-bottom:4px;color:#fff;}
+.cat-meta p{font-size:11px;margin:4px 0 0;text-transform:uppercase;letter-spacing:1px;color:#ccc;}
+.cat-content{padding:18px 24px;flex:1;display:flex;flex-direction:column;}
+.cat-topbar{display:flex;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid #ddd;padding-bottom:8px;}
+.cat-mod-val{font-size:18px;font-weight:700;color:#111;}
+.cat-grid{display:grid;gap:14px;margin-bottom:18px;flex:1;}
+.cat-grid.g2{grid-template-columns:repeat(2,1fr);}
+.cat-grid.g3{grid-template-columns:repeat(3,1fr);}
+.cat-grid.g1{grid-template-columns:1fr;display:flex;gap:28px;}
+.cat-variant-card{border:1px solid #eee;display:flex;gap:8px;padding:8px;background:#fafafa;border-radius:6px;min-height:160px;}
+.cat-variant-img{width:44%;background:#fff;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:2.5rem;}
+.cat-variant-info{width:56%;display:flex;flex-direction:column;}
+.cat-variant-name{background:#333;color:#fff;font-size:10px;padding:5px;text-align:center;font-weight:700;text-transform:uppercase;margin-bottom:6px;border-radius:3px;letter-spacing:1px;}
+.cat-size-table{width:100%;border-collapse:collapse;font-size:10px;}
+.cat-size-table th{background:#eee;padding:3px;font-size:9px;color:#666;}
+.cat-size-table td{border:1px solid #ddd;padding:3px;text-align:center;background:#fff;font-weight:600;}
+.cat-row-total{font-weight:700;color:#5B1E31;background:#fff9f9!important;}
+.cat-footer-finance{background:#fff9e1;border:2px solid #d4af37;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-radius:5px;margin-top:8px;}
+.cat-f-item{text-align:center;}
+.cat-f-label{font-size:9px;font-weight:700;color:#8a6d3b;margin-bottom:3px;text-transform:uppercase;}
+.cat-f-val{font-size:15px;font-weight:700;color:#111;}
+.cat-gran-total{background:#5B1E31;color:#fff;padding:10px 18px;border-radius:5px;}
+.cat-gran-total .cat-f-label{color:#fcebd7;}
+.cat-gran-total .cat-f-val{color:#fff;font-size:20px;}
+.cat-f-div{border-left:2px solid #faebcc;height:35px;margin:0 8px;}
+/* =============================================
+   VIDRIOS DEMO STYLES
+============================================= */
+.vidrios-demo-wrap{min-height:400px;overflow-y:auto;}
+.vidrios-nav-demo{background:#0A192F;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.07);}
+.vnd-logo{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+.vnd-nav{display:flex;gap:18px;}
+.vnd-nav a{font-size:.72rem;color:rgba(255,255,255,.5);text-decoration:none;cursor:default;transition:color .2s;}
+.vnd-nav a:hover{color:rgba(255,255,255,.85);}
+.vnd-hero{background:linear-gradient(135deg,#0A192F 0%,#1a3a5c 50%,#0A192F 100%);padding:44px 28px;text-align:center;}
+.vnd-hero h1{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;color:#fff;background:linear-gradient(to right,#fff,#007AFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.vnd-hero p{font-size:.85rem;color:rgba(255,255,255,.5);margin-bottom:20px;}
+.vnd-hero-btn{background:#007AFF;color:#fff;padding:10px 24px;border-radius:999px;font-size:.82rem;font-weight:700;border:none;cursor:pointer;transition:all .2s;}
+.vnd-hero-btn:hover{background:#0056b3;}
+.vnd-services{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:22px 20px;}
+body.is-mobile .vnd-services{grid-template-columns:1fr;}
+.vnd-svc-card{background:rgba(255,255,255,.04);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);transition:transform .2s,border-color .2s;}
+.vnd-svc-card:hover{transform:translateY(-3px);border-color:rgba(0,122,255,.3);}
+.vnd-svc-img{height:80px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;background:rgba(0,122,255,.1);}
+.vnd-svc-body{padding:12px;}
+.vnd-svc-title{font-size:.85rem;font-weight:700;color:#fff;margin-bottom:4px;}
+.vnd-svc-sub{font-size:.72rem;color:rgba(255,255,255,.4);}
+.vnd-faq{padding:0 20px 22px;}
+.vnd-faq-item{background:rgba(255,255,255,.03);border-radius:10px;margin-bottom:8px;overflow:hidden;border:1px solid rgba(255,255,255,.06);}
+.vnd-faq-q{padding:14px 18px;font-weight:600;color:#fff;cursor:pointer;font-size:.84rem;display:flex;justify-content:space-between;align-items:center;}
+.vnd-faq-a{padding:0 18px 12px;font-size:.8rem;color:rgba(255,255,255,.45);display:none;line-height:1.7;}
+.vnd-faq-item.open .vnd-faq-a{display:block;}
+.vnd-faq-item.open .vnd-faq-q span:last-child{transform:rotate(45deg);display:inline-block;}
+/* =============================================
+   ODOO DEMO STYLES
+============================================= */
+.odoo-demo{padding:28px;min-height:360px;}
+.odoo-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+body.is-mobile .odoo-stats-row{grid-template-columns:1fr;}
+.odoo-stat{text-align:center;background:rgba(255,255,255,.03);border-radius:12px;padding:18px 14px;border:1px solid var(--glass-border);}
+.odoo-stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--orange);line-height:1;margin-bottom:4px;}
+.odoo-stat-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+.odoo-prog-section{margin-bottom:20px;}
+.odoo-prog-label{display:flex;justify-content:space-between;margin-bottom:7px;}
+.odoo-prog-label span{font-size:.82rem;color:var(--muted);}
+.odoo-prog-label strong{font-size:.82rem;color:var(--white);}
+.prog-track{background:rgba(255,255,255,.06);border-radius:999px;height:8px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:999px;transform:scaleX(0);transform-origin:left;transition:transform 2.2s cubic-bezier(.23,1,.32,1);}
+.prog-fill.ora{background:linear-gradient(to right,var(--orange-dim),var(--orange));}
+.prog-fill.blu{background:linear-gradient(to right,#1a5f9e,#3498db);}
+.prog-fill.grn{background:linear-gradient(to right,#1a7a3f,#27ae60);}
+.prog-fill.pur{background:linear-gradient(to right,#5b2a8a,#9b59b6);}
+.odoo-terminal{background:#0d1117;border-radius:10px;padding:14px;overflow:hidden;font-family:'Space Mono',monospace;font-size:.68rem;}
+.ot-line{display:flex;gap:7px;margin-bottom:5px;line-height:1.5;}
+.ot-ts{color:#546e7a;}.ot-ok{color:#27ae60;}.ot-info{color:#3498db;}.ot-warn{color:var(--gold);}
+/* =============================================
+   HABILIDADES
+============================================= */
+#habilidades{max-width:1280px;margin:0 auto;}
+.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start;}
+body.is-mobile .skills-grid{grid-template-columns:1fr;}
+.skill-group{margin-bottom:28px;}
+.skill-group-title{font-size:.76rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;}
+.skill-bar-row{margin-bottom:13px;}
+.skill-bar-label{display:flex;justify-content:space-between;margin-bottom:5px;}
+.skill-bar-label span{font-size:.84rem;color:var(--white);}
+.skill-bar-label em{font-style:normal;font-size:.76rem;color:var(--muted);}
+.skill-bar-track{background:rgba(255,255,255,.05);border-radius:999px;height:6px;overflow:hidden;}
+.skill-bar-fill{height:100%;border-radius:999px;background:linear-gradient(to right,var(--orange-dim),var(--orange));transform:scaleX(0);transform-origin:left;transition:transform 1.3s cubic-bezier(.23,1,.32,1);}
+.soft-cloud{display:flex;flex-wrap:wrap;gap:9px;}
+.soft-chip{padding:9px 16px;border-radius:999px;font-size:.8rem;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);color:var(--muted);transition:all .2s;cursor:default;}
+.soft-chip:hover{background:rgba(245,136,31,.1);border-color:rgba(245,136,31,.4);color:var(--orange);}
+.tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+.tool-card{background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:9px;padding:13px 14px;display:flex;align-items:center;gap:9px;transition:all .2s;}
+.tool-card:hover{background:rgba(245,136,31,.06);border-color:rgba(245,136,31,.2);transform:translateY(-2px);}
+.tool-icon{font-size:1.3rem;}
+.tool-name{font-size:.8rem;font-weight:600;color:var(--white);}
+.tool-level{font-size:.63rem;color:var(--muted);}
+/* =============================================
+   CONTACTO
+============================================= */
+#contacto{background:linear-gradient(180deg,var(--navy) 0%,#050c18 100%);position:relative;z-index:2;padding:90px 48px;text-align:center;}
+body.is-mobile #contacto{padding:60px 20px;}
+.contact-inner{max-width:620px;margin:0 auto;}
+.contact-inner>p{color:var(--muted);line-height:1.8;margin-bottom:36px;}
+.contact-links{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-bottom:52px;}
+.contact-link{display:flex;align-items:center;gap:9px;background:var(--card-bg);border:1px solid var(--glass-border);padding:13px 22px;border-radius:12px;color:var(--white);text-decoration:none;font-size:.86rem;font-weight:600;transition:all .2s;}
+.contact-link:hover{border-color:var(--orange);color:var(--orange);transform:translateY(-3px);}
+.signature{font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:900;color:transparent;-webkit-text-stroke:1px rgba(245,136,31,.3);letter-spacing:-2px;margin-bottom:14px;}
+.footer-note{font-family:'Space Mono',monospace;font-size:.68rem;color:rgba(255,255,255,.15);letter-spacing:.09em;}
+/* =============================================
+   MOBILE-SPECIFIC TWEAKS
+============================================= */
+body.is-mobile{padding-bottom:calc(70px + var(--ios-safe-bottom));}
+body.is-mobile .hero-name{letter-spacing:-2px;}
+body.is-mobile .wms-wrap{height:auto;}
+body.is-mobile .label-wrap{height:auto;}
+body.is-mobile .cat-doc{transform:scale(.7);transform-origin:top center;}
+@media(max-width:768px){
+  .fil-grid,.wms-kpis,.about-stats,.odoo-stats-row{grid-template-columns:1fr 1fr;}
+  .vnd-services,.skills-grid,.tools-grid{grid-template-columns:1fr;}
+  .proj-impact{flex-direction:row;flex-wrap:wrap;}
+}
+@media(max-width:480px){
+  .wms-kpis,.about-stats,.fil-grid{grid-template-columns:1fr 1fr;}
+  .cat-grid.g2,.cat-grid.g3{grid-template-columns:1fr;}
+}
+/* =============================================
+   HOVER EXPAND for mobile tap
+============================================= */
+body.is-mobile .chip:active{background:rgba(245,136,31,.1);border-color:var(--orange);color:var(--orange);}
+body.is-mobile .fil-card:active{background:rgba(245,136,31,.06);border-color:rgba(245,136,31,.3);}
+body.is-mobile .soft-chip:active{background:rgba(245,136,31,.1);border-color:rgba(245,136,31,.4);color:var(--orange);}
+</style>
+</head>
+<body>
+<!-- CURSOR DESKTOP -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div class="noise"></div>
+<canvas id="pc"></canvas>
+
+<!-- DESKTOP NAV -->
+<nav id="deskNav">
+  <div class="nav-logo">Axel <span>LV</span></div>
+  <ul class="nav-links">
+    <li><a href="#about">Sobre mí</a></li>
+    <li><a href="#filosofia-wrap">IA &amp; Filosofía</a></li>
+    <li><a href="#experiencia">Experiencia</a></li>
+    <li><a href="#proyectos">Proyectos</a></li>
+    <li><a href="#habilidades">Skills</a></li>
+    <li><a href="#contacto">Contacto</a></li>
+  </ul>
+  <a href="#contacto" class="nav-cta">Contáctame</a>
+</nav>
+
+<!-- MOBILE BOTTOM NAV (iOS style) -->
+<nav id="mobileNav">
+  <a href="#hero" class="mob-nav-item active" id="mni-home">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Inicio
+  </a>
+  <a href="#experiencia" class="mob-nav-item" id="mni-exp">
+    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    Carrera
+  </a>
+  <a href="#proyectos" class="mob-nav-item" id="mni-proj">
+    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    Proyectos
+  </a>
+  <a href="#habilidades" class="mob-nav-item" id="mni-skill">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+    Skills
+  </a>
+  <a href="#contacto" class="mob-nav-item" id="mni-contact">
+    <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    Contacto
+  </a>
+</nav>
+
+<!-- ======================== HERO ======================== -->
+<div id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">📦 Disponible · Guadalupe, N.L. · México</div>
+  <h1 class="hero-name">
+    <span class="first">Axel Lopez</span>
+    <span class="last">Vazquez</span>
+  </h1>
+  <p class="hero-title">Operaciones &amp; Logística · <em>Automatización con IA</em> · Desarrollo de Sistemas</p>
+  <div class="hero-chips">
+    <span class="chip">🤖 IA Day-to-Day</span>
+    <span class="chip">📦 WMS / ERP</span>
+    <span class="chip">🖨️ ZPL / Monarch</span>
+    <span class="chip">📊 SAP · Odoo</span>
+    <span class="chip">💾 MongoDB + Node.js</span>
+    <span class="chip">🏭 Logística Industrial</span>
+    <span class="chip">📑 Catálogos Digitales</span>
+    <span class="chip">👔 Men's International Collection</span>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><div class="scroll-line"></div></div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ======================== ABOUT ======================== -->
+<section id="about" class="reveal">
+  <div>
+    <span class="section-tag">// 01 · Sobre mí</span>
+    <h2 class="section-title">Apasionado por <em>lo que hago</em></h2>
+    <div class="section-divider"></div>
+    <p class="about-p">Soy <strong>Axel Lopez Vazquez</strong>, un profesional de operaciones y logística que descubrió el poder de la tecnología desde adentro de un almacén. Empecé cargando cajas, y hoy construyo los sistemas que los administran.</p>
+    <p class="about-p">Lo que me diferencia es simple: <strong>cuando veo un problema, no espero a que alguien lo resuelva.</strong> Lo analizo, busco la herramienta correcta, me siento con Claude o Gemini y construyo la solución. Así nació un sistema ERP completo, un automatizador de etiquetas Monarch, un generador de catálogos profesionales y más.</p>
+    <p class="about-p">No me llamo programador — soy alguien que <strong>sabe aprovechar las herramientas del presente</strong> para lograr lo que antes tomaba a un equipo. Tengo el pensamiento de un operador, la iniciativa de un emprendedor y la curiosidad de un ingeniero. <strong>Hoy trabajo en Men's International Collection</strong>, empresa de trajes para caballero en San Pedro, N.L.</p>
+  </div>
+  <div class="about-stats">
+    <div class="stat-box reveal"><div class="stat-number"><span class="counter" data-target="5">0</span>+</div><div class="stat-label">Años de experiencia operativa</div></div>
+    <div class="stat-box reveal"><div class="stat-number"><span class="counter" data-target="4287">0</span>+</div><div class="stat-label">SKUs migrados a Odoo</div></div>
+    <div class="stat-box reveal"><div class="stat-number"><span class="counter" data-target="7">0</span></div><div class="stat-label">Sistemas construidos</div></div>
+    <div class="stat-box reveal"><div class="stat-number">100<span style="font-size:1.4rem">%</span></div><div class="stat-label">IA presente cada día</div></div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ======================== FILOSOFIA ======================== -->
+<div id="filosofia-wrap" style="padding:90px 48px;max-width:1280px;margin:0 auto;position:relative;z-index:2;">
+<div id="filosofia" class="reveal">
+  <span class="section-tag">// 02 · Filosofía &amp; Mentalidad</span>
+  <h2 class="section-title" style="max-width:580px;">El poder de la <em>IA en manos</em><br>del que vive la operación</h2>
+  <div class="section-divider"></div>
+  <div class="fil-grid">
+    <div class="fil-cards">
+      <div class="fil-card"><div class="fil-icon">🔥</div><div class="fil-text"><h4>Sentido de pertenencia total</h4><p>Si nadie más lo hace, yo lo hago. Migré 4,287 SKUs a Odoo yo solo porque sabía que era necesario. Eso me define.</p></div></div>
+      <div class="fil-card"><div class="fil-icon">🤖</div><div class="fil-text"><h4>IA como copiloto, no como muleta</h4><p>Claude y Gemini son parte de mi equipo. Los uso para amplificar mis ideas — el conocimiento del proceso es mío, la ejecución la aceleramos juntos.</p></div></div>
+      <div class="fil-card"><div class="fil-icon">⚡</div><div class="fil-text"><h4>Detectar el cuello de botella</h4><p>Las etiquetas se imprimían una por una. En días construí un sistema que procesa lotes completos en minutos. De horas a segundos.</p></div></div>
+      <div class="fil-card"><div class="fil-icon">🏗️</div><div class="fil-text"><h4>Rudo para el trabajo, fino para los sistemas</h4><p>No le temo al trabajo pesado. Esa misma energía la pongo al construir: sin miedo a lo complejo, sin rendirme ante el primer error.</p></div></div>
+      <div class="fil-card"><div class="fil-icon">🌱</div><div class="fil-text"><h4>Impacto medible y permanente</h4><p>Cada sistema que construyo deja huella real: horas ahorradas, costos reducidos, procesos ordenados. No hago cosas a medias.</p></div></div>
+    </div>
+    <div>
+      <div class="ai-terminal">
+        <div class="ai-terminal-header">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span style="font-family:'Space Mono',monospace;font-size:.66rem;color:var(--muted);margin-left:6px;">axel@mic-warehouse ~ claude-session</span>
+        </div>
+        <div class="ai-terminal-body" id="terminal-out"></div>
+      </div>
+      <div style="margin-top:13px;padding:16px;background:rgba(255,255,255,.02);border:1px solid var(--glass-border);border-radius:9px;">
+        <p style="font-size:.8rem;color:var(--muted);line-height:1.7;">"<strong style='color:var(--white)'>Hoy en día con la ayuda de Claude, no hay cosa imposible.</strong> Soy un hombre apasionado. Cuando algo me gusta le dedico tiempo. Soy rudo para trabajar y me fascina la IA."</p>
+        <p style="font-size:.7rem;color:var(--orange);margin-top:7px;font-weight:700;">— Axel Lopez Vazquez</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ======================== EXPERIENCIA ======================== -->
+<section id="experiencia" class="reveal">
+  <span class="section-tag">// 03 · Trayectoria</span>
+  <h2 class="section-title">Experiencia <em>profesional</em></h2>
+  <div class="section-divider"></div>
+  <div class="timeline">
+    <div class="tl-item current reveal">
+      <div class="tl-period">2025 — Presente</div>
+      <div class="mic-badge">🏢 Trabajo Actual</div>
+      <div class="tl-role">Operaciones, Logística &amp; Desarrollo de Sistemas</div>
+      <div class="tl-company"><strong>Men's International Collection, S.A. de C.V.</strong> — San Pedro Garza García, N.L.</div>
+      <ul class="tl-bullets">
+        <li>Construí y puse en producción un <strong>sistema ERP/WMS completo</strong> con Node.js, MongoDB, push notifications y múltiples módulos: inventario, pedidos, etiquetado, conciliación, kardex.</li>
+        <li>Desarrollé el <strong>Sistema Maestro de Etiquetas Monarch (ZPL)</strong> — pasando de impresión una por una a lotes completos: de horas a minutos.</li>
+        <li>Construí un <strong>generador de catálogos digitales</strong> Luciano Ferretti que eliminó fotógrafos externos y servicios de diseño.</li>
+        <li>Realicé la <strong>migración de 4,287 SKUs</strong> al sistema Odoo, ahorrando sesiones de consultoría valuadas en $1,000 USD/hora.</li>
+        <li>Desarrollé una <strong>web profesional para MARIEL Vidrios</strong>, negocio de un compañero, diseño iOS-first con glassmorphism.</li>
+      </ul>
+      <div class="tl-tags"><span class="ttag">Node.js</span><span class="ttag">MongoDB</span><span class="ttag">JavaScript</span><span class="ttag">Odoo</span><span class="ttag">ZPL/Monarch</span><span class="ttag">HTML/CSS</span><span class="ttag">Claude AI</span><span class="ttag">Gemini AI</span></div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-period">03/2024 — 06/2025</div>
+      <div class="tl-role">Auxiliar de Almacén</div>
+      <div class="tl-company"><strong>Ajemex</strong> — Guadalupe, N.L.</div>
+      <ul class="tl-bullets">
+        <li>Inventarios diarios de almacén de insumos; detección y resolución de diferencias en sistema SAP.</li>
+        <li><strong>Proceso completo de recepción</strong>: descarga con montacargas HS, verificación contra factura, ingreso en sistema y confirmación vía correo.</li>
+        <li>Inventarios de caducidad semanales. Asignado frecuentemente a tareas bajo presión por responsabilidad y capacidad de resolución.</li>
+      </ul>
+      <div class="tl-tags"><span class="ttag">SAP</span><span class="ttag">Montacargas HS</span><span class="ttag">Excel</span><span class="ttag">PEPS</span></div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-period">01/2023 — 02/2024</div>
+      <div class="tl-role">Analista de Servicio al Cliente</div>
+      <div class="tl-company"><strong>Grupo Motomex</strong> — Monterrey, N.L.</div>
+      <ul class="tl-bullets">
+        <li>Revisión diaria del panel de estadísticas Mercado Libre; priorización de pedidos demorados.</li>
+        <li>Gestión de reabastecimiento en bodegas Full con análisis de ventas; creación de guías Estafeta y edición con Adobe.</li>
+      </ul>
+      <div class="tl-tags"><span class="ttag">Mercado Libre</span><span class="ttag">Excel</span><span class="ttag">Adobe</span><span class="ttag">eCommerce</span></div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-period">09/2022 — 01/2023 · 12/2020 — 09/2022</div>
+      <div class="tl-role">Analista de Inventarios → Auxiliar de Almacén</div>
+      <div class="tl-company"><strong>Grupo Motomex / Mission Foods</strong> — Monterrey / Apodaca, N.L.</div>
+      <ul class="tl-bullets">
+        <li>Inventarios cíclicos, verificación de facturas, acomodo optimizado, inventarios bajo método PEPS y trazabilidad completa en SAP.</li>
+        <li>Operación de montacargas HS y patín eléctrico. Abastecimiento de líneas de producción.</li>
+      </ul>
+      <div class="tl-tags"><span class="ttag">SAP</span><span class="ttag">Inventario Cíclico</span><span class="ttag">Trazabilidad</span><span class="ttag">Montacargas</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ======================== PROYECTOS ======================== -->
+<section id="proyectos" class="reveal">
+  <span class="section-tag">// 04 · Portafolio de Proyectos</span>
+  <h2 class="section-title">Sistemas en <em>producción real</em><br>— pruébalos tú mismo</h2>
+  <div class="section-divider"></div>
+  <div class="proj-intro"><p>Cada demo aquí es <strong>código real</strong> extraído de los sistemas que uso a diario en Men's International Collection. No son maquetas — son las funciones reales corriendo en tu navegador con datos de ejemplo.</p></div>
+
+  <!-- ======= PROJECT 1: WMS ======= -->
+  <div class="proj-card reveal">
+    <div class="proj-header">
+      <div class="proj-meta">
+        <div class="proj-num">01</div>
+        <h3 class="proj-name">Sistema ERP / WMS Completo</h3>
+        <p class="proj-desc">Un sistema de gestión de almacén construido desde cero con Node.js y MongoDB. Inventario en tiempo real, pedidos WMS con picking, kardex de trazabilidad, auditorías cíclicas, préstamos masivos y conciliación con Odoo. <strong>Demo interactivo: busca, filtra, haz clic en un modelo y maneja el stock.</strong></p>
+      </div>
+      <div class="proj-impact">
+        <div class="impact-pill ip-green">✅ En Producción Activa</div>
+        <div class="impact-pill ip-orange">📦 Almacén Digitalizado</div>
+        <div class="impact-pill ip-blue">🔔 Push Notifications</div>
+        <div class="impact-pill ip-green">🔗 Integración Odoo</div>
+      </div>
+    </div>
+    <div class="proj-tech">
+      <span class="tech-chip">Node.js</span><span class="tech-chip">Express.js</span><span class="tech-chip">MongoDB</span>
+      <span class="tech-chip">Mongoose</span><span class="tech-chip">Web Push</span><span class="tech-chip">REST API</span>
+      <span class="tech-chip">JavaScript ES6+</span><span class="tech-chip">Claude AI</span>
+    </div>
+    <!-- WMS DEMO -->
+    <div class="demo-win" id="wms-demo-container">
+      <div class="demo-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="demo-bar-title">Sistema WMS · Men's International Collection · Panel Almacén</span>
+        <div class="demo-bar-actions">
+          <button class="demo-btn" onclick="wmsAddEntry()">📥 Ingreso</button>
+          <button class="demo-btn" onclick="wmsDownloadExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="wms-wrap" id="wms-wrap">
+          <div class="wms-sidebar">
+            <div class="wms-sidebar-logo"><span>MIC WMS</span></div>
+            <div class="wms-nav-item active">📦 Stock Consolidado</div>
+            <div class="wms-nav-item">⚖️ Auditoría Surtido</div>
+            <div class="wms-nav-item">🤝 Préstamos</div>
+            <div class="wms-nav-item">📜 Bitácora</div>
+            <div class="wms-nav-item">🗂️ Kardex Total</div>
+            <div class="wms-nav-item">🛒 Pedidos WMS</div>
+            <div class="wms-nav-item">🔗 Conciliación Odoo</div>
+            <div style="margin-top:12px;padding:14px;"><div style="font-size:.62rem;color:var(--muted);text-align:center;">v7.0 · Zona MTY, MX</div></div>
+          </div>
+          <div class="wms-main">
+            <div class="wms-topbar">
+              <div class="wms-page-title">📦 Stock Consolidado</div>
+              <div class="wms-btns">
+                <button class="wbtn g" onclick="wmsAddEntry()">📥 Ingreso Manual</button>
+                <button class="wbtn n">↩️ Devolución</button>
+                <button class="wbtn o">🚀 Carga Masiva</button>
+                <button class="wbtn gh">📎 SKUs CSV</button>
+              </div>
+            </div>
+            <div class="wms-kpis">
+              <div class="kpi"><div class="kpi-l">Total SKUs</div><div class="kpi-v ora" id="kpi-skus">4,287</div></div>
+              <div class="kpi"><div class="kpi-l">Pedidos Activos</div><div class="kpi-v bl" id="kpi-ped">12</div></div>
+              <div class="kpi"><div class="kpi-l">Préstamos</div><div class="kpi-v">3</div></div>
+              <div class="kpi"><div class="kpi-l">Exactitud Inv.</div><div class="kpi-v gr">98.7%</div></div>
+            </div>
+            <input type="text" class="wms-search" placeholder="🔍 Buscar Modelo, Color o Talla (Ej: 4040 38R)..." oninput="filtrarTablaWMS(this.value)" id="wms-search-input">
+            <div class="wms-table-wrap">
+              <table class="wms-table" id="wms-table">
+                <thead><tr><th></th><th>Modelo Principal</th><th>Color</th><th>Stock Global</th><th>Lotes / Tallas</th><th>Acción</th></tr></thead>
+                <tbody id="wms-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- SLIDE PANEL -->
+          <div class="wms-overlay" id="wms-overlay" onclick="cerrarPanelWMS()"></div>
+          <div class="wms-panel" id="wms-panel">
+            <div class="wms-panel-header">
+              <div>
+                <div id="sp-modelo" style="font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:3px;">MODELO</div>
+                <div id="sp-color" style="font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;">COLOR</div>
+              </div>
+              <button class="wbtn n" style="padding:6px 11px;" onclick="cerrarPanelWMS()">✕</button>
+            </div>
+            <div class="wms-panel-body" id="sp-body"></div>
+            <div class="wms-panel-footer" id="sp-footer">
+              <div class="wms-act-sel">
+                <div><div class="act-talla-label">Talla Seleccionada</div><div class="act-talla-val" id="act-talla">--</div></div>
+                <div style="text-align:right;"><div class="act-talla-label">Lote</div><div style="font-size:.8rem;font-weight:700;color:var(--orange);" id="act-lote">--</div></div>
+              </div>
+              <div class="wms-act-btns">
+                <button class="wbtn o" onclick="wmsActionSalida()">📤 Salida</button>
+                <button class="wbtn gh" style="border-color:rgba(245,136,31,.4)">🤝 Préstamo</button>
+                <button class="wbtn n">⚖️ Ajuste</button>
+                <button class="wbtn n">📜 Bitácora</button>
+              </div>
+            </div>
+          </div>
+          <div class="wms-toast" id="wms-toast">✅ Movimiento registrado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PROJECT 2: LABELS ======= -->
+  <div class="proj-card reveal">
+    <div class="proj-header">
+      <div class="proj-meta">
+        <div class="proj-num">02</div>
+        <h3 class="proj-name">Sistema Maestro de Etiquetas Monarch</h3>
+        <p class="proj-desc">Las etiquetas se imprimían <strong>una por una</strong> por limitaciones del sistema Zebra. Investigué el lenguaje ZPL, entendí la impresora Monarch y con Gemini construí este sistema. <strong>Demo real: selecciona un traje, genera el ZPL y mira la etiqueta renderizada por la API de Labelary.</strong></p>
+      </div>
+      <div class="proj-impact">
+        <div class="impact-pill ip-green">⏱️ De horas a minutos</div>
+        <div class="impact-pill ip-orange">🖨️ ZPL Real en Demo</div>
+        <div class="impact-pill ip-blue">🌐 API Labelary Live</div>
+        <div class="impact-pill ip-green">🔄 Integración Odoo</div>
+      </div>
+    </div>
+    <div class="proj-tech">
+      <span class="tech-chip">ZPL Language</span><span class="tech-chip">Monarch Printer</span>
+      <span class="tech-chip">JavaScript</span><span class="tech-chip">Labelary API</span>
+      <span class="tech-chip">Odoo Integration</span><span class="tech-chip">Gemini AI</span>
+    </div>
+    <!-- LABEL DEMO -->
+    <div class="demo-win">
+      <div class="demo-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="demo-bar-title">Sistema Maestro de Etiquetas — Luciano Ferretti · Monarch Nylon 38x66mm</span>
+        <div class="demo-bar-actions">
+          <button class="demo-btn" onclick="labelGenerar()">🖨️ Generar Lote</button>
+          <button class="demo-btn" onclick="labelLimpiar()">🗑️ Limpiar</button>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="label-wrap">
+          <div class="label-left">
+            <div class="label-section-title">Catálogo de Trajes</div>
+            <input type="text" class="label-form-input" style="margin-bottom:12px;" placeholder="🔍 Buscar modelo, color o talla..." oninput="filtrarCatalogoLabel(this.value)">
+            <div class="cat-grid-label" id="label-cat-grid"></div>
+            <div class="label-section-title" style="margin-top:4px;">Cola de Impresión</div>
+            <table class="label-queue-table" id="label-queue-table">
+              <thead><tr><th>Talla</th><th>Modelo</th><th>Color</th><th>Cant.</th><th>Total</th><th></th></tr></thead>
+              <tbody id="label-queue-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted);font-size:.78rem;">Selecciona trajes del catálogo ↑</td></tr></tbody>
+            </table>
+            <div class="label-form-row">
+              <label class="label-form-label">Forro</label>
+              <input type="text" class="label-form-input" id="label-forro" value="100% POLYESTER" oninput="actualizarPreviewLabel()">
+            </div>
+            <button class="lbtn or" id="label-print-btn" onclick="labelGenerar()">🖨️ IMPRIMIR LOTE NYLON</button>
+            <button class="lbtn gr" onclick="labelAddSample()">+ Agregar Traje Demo</button>
+          </div>
+          <div class="label-right">
+            <div class="label-section-title">Vista Previa en Vivo</div>
+            <div class="label-preview-outer">
+              <div class="labelary-loading" id="labelary-loading">Selecciona un traje para ver la etiqueta real →</div>
+              <img id="labelary-img" class="labelary-preview" alt="Etiqueta ZPL renderizada por Labelary API">
+              <div class="label-preview-card" id="label-preview-fallback" style="display:none;">
+                <div class="lp-brand" id="lp-brand">LUCIANO FERRETTI</div>
+                <div class="lp-size" id="lp-size">TALLA: --</div>
+                <div class="lp-model" id="lp-model">MODELO: --</div>
+                <div class="lp-color" id="lp-color">COLOR: --</div>
+                <div class="lp-fabric" id="lp-fabric">TELA: --</div>
+                <div class="lp-made">HECHO EN MEXICO POR:<br>MEN'S INTERNATIONAL<br>COLLECTION, S.A. DE C.V.<br>AVE. VASCONCELOS 205-A<br>GARZA GARCIA N.L. C.P. 66220<br>RFC: MIC100415435</div>
+                <div class="lp-icons">🧺 ❌ 🔲 ♻️</div>
+              </div>
+              <div class="lp-counter" id="lp-counter" style="display:none;">Diseño <span id="lp-cur">1</span> de <span id="lp-tot">1</span></div>
+              <div style="display:flex;gap:8px;margin-top:8px;" id="lp-carousel" style="display:none;">
+                <button class="demo-btn" onclick="labelPrev()">←</button>
+                <button class="demo-btn" onclick="labelNext()">→</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PROJECT 3: CATALOG CREATOR ======= -->
+  <div class="proj-card reveal">
+    <div class="proj-header">
+      <div class="proj-meta">
+        <div class="proj-num">03</div>
+        <h3 class="proj-name">Generador de Catálogos Luciano Ferretti</h3>
+        <p class="proj-desc">Antes se contrataban fotógrafos y servicios de diseño externos para los catálogos. Desarrollé junto con Claude esta herramienta que genera fichas PDF profesionales en segundos. <strong>Demo real: edita el modelo, colores y tallas — el documento se actualiza en vivo y puedes descargar el PDF.</strong></p>
+      </div>
+      <div class="proj-impact">
+        <div class="impact-pill ip-green">💰 Ahorro en fotógrafos</div>
+        <div class="impact-pill ip-orange">📑 PDF real descargable</div>
+        <div class="impact-pill ip-blue">✏️ Editor en vivo</div>
+      </div>
+    </div>
+    <div class="proj-tech">
+      <span class="tech-chip">JavaScript</span><span class="tech-chip">html2canvas</span>
+      <span class="tech-chip">jsPDF</span><span class="tech-chip">CSS Grid</span>
+      <span class="tech-chip">DOM Manipulation</span><span class="tech-chip">Claude AI</span>
+    </div>
+    <!-- CATALOG DEMO -->
+    <div class="demo-win">
+      <div class="demo-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="demo-bar-title">Creador de Catálogos — Luciano Ferretti · Editor de Lote</span>
+        <div class="demo-bar-actions">
+          <button class="demo-btn" onclick="catalogAddColor()">+ Color</button>
+          <button class="demo-btn" onclick="catalogExportPDF()">📑 Descargar PDF</button>
+        </div>
+      </div>
+      <div class="demo-body" style="overflow:auto;">
+        <div class="catalog-demo-wrap">
+          <div class="catalog-controls">
+            <div class="cat-input-group">
+              <label class="cat-input-label">Título / Serie</label>
+              <input type="text" class="cat-input" id="cat-linea" value="LINEA 100 - LUXURY WOOL" oninput="catalogUpdate()">
+            </div>
+            <div class="cat-input-group">
+              <label class="cat-input-label">Modelo</label>
+              <input type="text" class="cat-input" id="cat-mod" value="MODELO 116-1" oninput="catalogUpdate()">
+            </div>
+            <div class="cat-input-group">
+              <label class="cat-input-label">Precio unitario (sin IVA)</label>
+              <input type="number" class="cat-input" id="cat-precio" value="690" oninput="catalogUpdate()">
+            </div>
+            <div id="cat-colors-editor"></div>
+            <button class="demo-btn" style="width:100%;margin-top:8px;padding:9px;" onclick="catalogAddColor()">+ Añadir Color</button>
+            <button class="cat-export-btn" onclick="catalogExportPDF()">📑 Descargar PDF Real</button>
+          </div>
+          <div class="catalog-preview-area" id="catalog-preview-area">
+            <div id="cat-doc">
+              <div class="cat-doc-header">
+                <div class="cat-brand"><h1>Luciano Ferretti</h1><p>CREATO IN ITALIA</p></div>
+                <div class="cat-meta"><h2 id="cat-pv-linea">LINEA 100 - LUXURY WOOL</h2><p id="cat-pv-sub">90% LANA 10% POLIAMIDE SUPER 120'S</p></div>
+              </div>
+              <div class="cat-content">
+                <div style="flex-grow:1;">
+                  <div class="cat-topbar"><div class="cat-mod-val" id="cat-pv-mod">MODELO 116-1</div></div>
+                  <div id="cat-pv-grid"></div>
+                </div>
+                <div class="cat-footer-finance" id="cat-finance">
+                  <div class="cat-f-item" style="text-align:left;"><div class="cat-f-label">PRECIO ESPECIAL</div><div class="cat-f-val" id="cat-f-precio">$690.00 <span style="font-size:10px;color:#888;">+ IVA</span></div></div>
+                  <div class="cat-f-div"></div>
+                  <div class="cat-f-item"><div class="cat-f-label">TOTAL PIEZAS</div><div class="cat-f-val" id="cat-f-pzas">0</div></div>
+                  <div class="cat-f-div"></div>
+                  <div class="cat-f-item"><div class="cat-f-label">SUBTOTAL</div><div class="cat-f-val" id="cat-f-sub">$0.00</div></div>
+                  <div class="cat-f-item"><div class="cat-f-label">IVA 16%</div><div class="cat-f-val" id="cat-f-iva">$0.00</div></div>
+                  <div class="cat-f-item cat-gran-total"><div class="cat-f-label">TOTAL LOTE MXN</div><div class="cat-f-val" id="cat-f-total">$0.00</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PROJECT 4: MARIEL VIDRIOS ======= -->
+  <div class="proj-card reveal">
+    <div class="proj-header">
+      <div class="proj-meta">
+        <div class="proj-num">04</div>
+        <h3 class="proj-name">MARIEL — Web para Negocio de Vidrios</h3>
+        <p class="proj-desc">Un compañero de trabajo tenía su negocio de vidrios y espejos de alta gama pero sin presencia digital. En mis tiempos libres, desarrollé su página web completa: diseño iOS-first, glassmorphism, galería de productos, FAQ y contacto por WhatsApp. <strong>Este es el prototipo real que construí.</strong></p>
+      </div>
+      <div class="proj-impact">
+        <div class="impact-pill ip-green">🆓 Pro bono — ayuda a compañero</div>
+        <div class="impact-pill ip-orange">📱 iOS-first design</div>
+        <div class="impact-pill ip-blue">💬 WhatsApp integrado</div>
+      </div>
+    </div>
+    <div class="proj-tech">
+      <span class="tech-chip">HTML5</span><span class="tech-chip">CSS3</span><span class="tech-chip">Glassmorphism</span>
+      <span class="tech-chip">JavaScript</span><span class="tech-chip">Responsive Design</span><span class="tech-chip">Claude AI</span>
+    </div>
+    <!-- VIDRIOS DEMO -->
+    <div class="demo-win">
+      <div class="demo-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="demo-bar-title">MARIEL · Vidrios y Espejos de Alta Gama — Juárez, N.L. (Prototipo)</span>
+      </div>
+      <div class="demo-body">
+        <div class="vidrios-demo-wrap">
+          <div class="vidrios-nav-demo">
+            <div class="vnd-logo">
+              <svg width="28" height="28" viewBox="0 0 100 100"><polygon points="10,90 50,10 90,90" fill="rgba(10,25,47,.9)"/><polygon points="30,90 50,40 70,90" fill="rgba(0,122,255,.85)"/><polygon points="50,90 50,10 90,90" fill="rgba(255,255,255,.2)"/></svg>
+              MARIEL
+            </div>
+            <div class="vnd-nav">
+              <a href="#">Inicio</a><a href="#">Nosotros</a><a href="#">Portafolio</a><a href="#">Contacto</a>
+            </div>
+          </div>
+          <div class="vnd-hero">
+            <h1>Refleja tu Mejor Espacio</h1>
+            <p>Diseño, fabricación e instalación de cristales y espejos de alta gama en Juárez, N.L.</p>
+            <button class="vnd-hero-btn">📱 Cotizar por WhatsApp</button>
+          </div>
+          <div class="vnd-services">
+            <div class="vnd-svc-card"><div class="vnd-svc-img">🪞</div><div class="vnd-svc-body"><div class="vnd-svc-title">Espejos LED Retroiluminados</div><div class="vnd-svc-sub">Luz cálida perimetral · Diseño a medida</div></div></div>
+            <div class="vnd-svc-card"><div class="vnd-svc-img">✨</div><div class="vnd-svc-body"><div class="vnd-svc-title">Diseños Biselados</div><div class="vnd-svc-sub">Cortes diamante · Muros decorativos</div></div></div>
+            <div class="vnd-svc-card"><div class="vnd-svc-img">🔲</div><div class="vnd-svc-body"><div class="vnd-svc-title">Cristal Templado</div><div class="vnd-svc-sub">Canceles, puertas y divisiones</div></div></div>
+          </div>
+          <div class="vnd-faq">
+            <div class="vnd-faq-item"><div class="vnd-faq-q" onclick="toggleFaq(this)">¿Hacen trabajos a la medida? <span>+</span></div><div class="vnd-faq-a">Somos fabricantes directos. Todos nuestros espejos LED, canceles y muros biselados se diseñan, cortan y ensamblan a la medida exacta de tu espacio.</div></div>
+            <div class="vnd-faq-item"><div class="vnd-faq-q" onclick="toggleFaq(this)">¿Cuánto tarda la instalación? <span>+</span></div><div class="vnd-faq-a">Espejos simples: 3-5 días hábiles. Proyectos grandes (muros biselados, cancelería): 7-10 días desde la toma de medidas.</div></div>
+            <div class="vnd-faq-item"><div class="vnd-faq-q" onclick="toggleFaq(this)">¿Qué garantía ofrecen? <span>+</span></div><div class="vnd-faq-a">Garantía total contra defectos de fabricación. Cristal templado inastillable y herrajes de acero inoxidable de por vida.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= PROJECT 5: ODOO ======= -->
+  <div class="proj-card reveal">
+    <div class="proj-header">
+      <div class="proj-meta">
+        <div class="proj-num">05</div>
+        <h3 class="proj-name">Migración Masiva a Odoo — 4,287 SKUs</h3>
+        <p class="proj-desc">Cuando la empresa decidió migrar a Odoo, nadie quería asumir trasladar el inventario completo. Las sesiones de consultoría valían <strong>$1,000 USD/hora</strong>. Lo intenté con múltiples métodos hasta encontrar el camino. Lo hice yo solo porque alguien tenía que dejar huella.</p>
+      </div>
+      <div class="proj-impact">
+        <div class="impact-pill ip-green">💰 Miles en consultoría ahorrados</div>
+        <div class="impact-pill ip-orange">🔄 4,287 SKUs migrados</div>
+        <div class="impact-pill ip-blue">📊 0% pérdida de datos</div>
+      </div>
+    </div>
+    <div class="proj-tech">
+      <span class="tech-chip">Odoo 16</span><span class="tech-chip">Python/CSV</span><span class="tech-chip">Excel avanzado</span>
+      <span class="tech-chip">Data cleaning</span><span class="tech-chip">Claude AI</span>
+    </div>
+    <div class="demo-win">
+      <div class="demo-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="demo-bar-title">Odoo Migration Tool · MIC — Axel Lopez Vazquez · 100% Completado</span>
+      </div>
+      <div class="demo-body">
+        <div class="odoo-demo" id="odoo-demo">
+          <div class="odoo-stats-row">
+            <div class="odoo-stat"><div class="odoo-stat-num"><span class="counter" data-target="4287">0</span></div><div class="odoo-stat-label">SKUs Migrados</div></div>
+            <div class="odoo-stat"><div class="odoo-stat-num" style="color:#27ae60;">0</div><div class="odoo-stat-label">Errores Críticos</div></div>
+            <div class="odoo-stat"><div class="odoo-stat-num" style="color:#3498db;">$0</div><div class="odoo-stat-label">Costo Consultoría</div></div>
+          </div>
+          <div class="odoo-prog-section"><div class="odoo-prog-label"><span>📦 Productos (modelos/colores/variantes)</span><strong>100%</strong></div><div class="prog-track"><div class="prog-fill ora odoo-prog"></div></div></div>
+          <div class="odoo-prog-section"><div class="odoo-prog-label"><span>📊 Stock inicial por talla (51 tallas c/u)</span><strong>100%</strong></div><div class="prog-track"><div class="prog-fill blu odoo-prog"></div></div></div>
+          <div class="odoo-prog-section"><div class="odoo-prog-label"><span>📝 Precios, categorías y marcas</span><strong>100%</strong></div><div class="prog-track"><div class="prog-fill grn odoo-prog"></div></div></div>
+          <div class="odoo-prog-section"><div class="odoo-prog-label"><span>🔗 Variantes de producto vinculadas</span><strong>100%</strong></div><div class="prog-track"><div class="prog-fill pur odoo-prog"></div></div></div>
+          <div class="odoo-terminal" id="odoo-terminal"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<div class="sep"></div>
+
+<!-- ======================== HABILIDADES ======================== -->
+<section id="habilidades" class="reveal">
+  <span class="section-tag">// 05 · Habilidades</span>
+  <h2 class="section-title">Lo que <em>sé hacer</em></h2>
+  <div class="section-divider"></div>
+  <div class="skills-grid">
+    <div>
+      <div class="skill-group">
+        <div class="skill-group-title">🏭 Operaciones &amp; Logística</div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>Control de Inventarios</span><em>Experto</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".97"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>WMS / ERP</span><em>Avanzado</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".92"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>Montacargas HS</span><em>Certificado</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".90"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>SAP (Módulo Almacén)</span><em>Intermedio</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".78"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>Odoo (Inventario)</span><em>Intermedio</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".75"></div></div></div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-title">💻 Desarrollo &amp; Tecnología</div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>HTML / CSS / JavaScript</span><em>Avanzado</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".88"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>Node.js + Express</span><em>Intermedio</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".75"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>MongoDB + Mongoose</span><em>Intermedio</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".72"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>Excel Avanzado</span><em>Avanzado</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".85"></div></div></div>
+        <div class="skill-bar-row"><div class="skill-bar-label"><span>IA (Claude + Gemini)</span><em>Power User</em></div><div class="skill-bar-track"><div class="skill-bar-fill" data-w=".98"></div></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="skill-group">
+        <div class="skill-group-title">🧠 Habilidades Blandas</div>
+        <div class="soft-cloud">
+          <span class="soft-chip">Sentido de pertenencia</span>
+          <span class="soft-chip">Proactividad total</span>
+          <span class="soft-chip">Resolución de problemas</span>
+          <span class="soft-chip">Trabajo bajo presión</span>
+          <span class="soft-chip">Liderazgo operativo</span>
+          <span class="soft-chip">Comunicación efectiva</span>
+          <span class="soft-chip">Detección de cuellos de botella</span>
+          <span class="soft-chip">Adaptabilidad</span>
+          <span class="soft-chip">Iniciativa propia</span>
+          <span class="soft-chip">Multifuncional</span>
+          <span class="soft-chip">Orientado a resultados</span>
+          <span class="soft-chip">Autodidacta</span>
+          <span class="soft-chip">Pensamiento sistémico</span>
+          <span class="soft-chip">Curiosidad técnica</span>
+        </div>
+      </div>
+      <div class="skill-group" style="margin-top:28px;">
+        <div class="skill-group-title">🛠️ Herramientas</div>
+        <div class="tools-grid">
+          <div class="tool-card"><span class="tool-icon">🤖</span><div><div class="tool-name">Claude AI</div><div class="tool-level">Daily driver</div></div></div>
+          <div class="tool-card"><span class="tool-icon">✨</span><div><div class="tool-name">Gemini AI</div><div class="tool-level">Desarrollo</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🟢</span><div><div class="tool-name">Node.js</div><div class="tool-level">Backend</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🍃</span><div><div class="tool-name">MongoDB</div><div class="tool-level">Base de datos</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🔷</span><div><div class="tool-name">Odoo</div><div class="tool-level">ERP</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🟡</span><div><div class="tool-name">Excel / Sheets</div><div class="tool-level">Análisis</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🔴</span><div><div class="tool-name">SAP</div><div class="tool-level">Almacén</div></div></div>
+          <div class="tool-card"><span class="tool-icon">🖨️</span><div><div class="tool-name">Monarch ZPL</div><div class="tool-level">Etiquetado</div></div></div>
+          <div class="tool-card"><span class="tool-icon">📦</span><div><div class="tool-name">Mercado Libre</div><div class="tool-level">eCommerce</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ======================== CONTACTO ======================== -->
+<section id="contacto">
+  <div class="contact-inner reveal">
+    <span class="section-tag">// 06 · Contacto</span>
+    <h2 class="section-title" style="text-align:center;">Hablemos de lo que <em>podemos</em><br>construir juntos</h2>
+    <div class="section-divider" style="margin:0 auto 28px;"></div>
+    <p>Soy alguien que no espera — si hay un problema, lo resuelvo. Si hay una oportunidad, la tomo. Si estás buscando a alguien que combine experiencia operativa real con capacidad de construir sistemas modernos con IA, aquí estoy.</p>
+    <div class="contact-links">
+      <a href="tel:8131615365" class="contact-link">📞 813-161-5365</a>
+      <a href="mailto:axelyan2@gmail.com" class="contact-link">✉️ axelyan2@gmail.com</a>
+      <a href="#" class="contact-link">📍 Juárez / Guadalupe, N.L.</a>
+      <a href="#" class="contact-link">👔 Men's International Collection</a>
+    </div>
+    <div class="signature">Axel LV</div>
+    <p class="footer-note">CONSTRUIDO CON 💛 Y CLAUDE AI · GUADALUPE, NUEVO LEÓN · 2026</p>
+  </div>
+</section>
+
+<script>
+// =============================================
+// 0. DEVICE DETECTION
+// =============================================
+(function(){
+  const ua = navigator.userAgent;
+  const w = window.innerWidth;
+  const isMobile = w < 900 || /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  if(isMobile) document.body.classList.add('is-mobile');
+  if(isIOS) document.body.classList.add('is-ios');
+  window._isMobile = isMobile;
+  window._isIOS = isIOS;
+})();
+
+// =============================================
+// 1. CURSOR (DESKTOP ONLY)
+// =============================================
+if(!window._isMobile){
+  const cur = document.getElementById('cur');
+  const ring = document.getElementById('cur-ring');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX; my=e.clientY;
+    cur.style.left=mx+'px'; cur.style.top=my+'px';
+  });
+  (function animR(){
+    rx+=(mx-rx)*.14; ry+=(my-ry)*.14;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(animR);
+  })();
+  document.querySelectorAll('a,button,.fil-card,.stat-box,.tool-card,.soft-chip,.demo-btn,.chip,.cat-card-label,.pill,.wms-nav-item').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cur.style.width='18px';cur.style.height='18px';ring.style.width='46px';ring.style.height='46px';});
+    el.addEventListener('mouseleave',()=>{cur.style.width='11px';cur.style.height='11px';ring.style.width='34px';ring.style.height='34px';});
+  });
+}
+
+// =============================================
+// 2. PARTICLES (reduced on mobile)
+// =============================================
+(function(){
+  const canvas = document.getElementById('pc');
+  const ctx = canvas.getContext('2d');
+  let W,H,particles=[];
+  function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+  resize(); window.addEventListener('resize',resize);
+  const count = window._isMobile ? 35 : 75;
+  function P(){
+    this.x=Math.random()*W; this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.25; this.vy=(Math.random()-.5)*.25;
+    this.r=Math.random()*1.4+.4; this.a=Math.random()*.45+.1;
+    this.c=Math.random()>.72?'245,136,31':'139,155,191';
+  }
+  for(let i=0;i<count;i++) particles.push(new P());
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.c},${p.a})`; ctx.fill();
+    });
+    if(!window._isMobile){
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);
+          if(d<110){ ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y);
+            ctx.strokeStyle=`rgba(139,155,191,${.055*(1-d/110)})`; ctx.lineWidth=.5; ctx.stroke(); }
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// =============================================
+// 3. NAV SCROLL
+// =============================================
+window.addEventListener('scroll',()=>{
+  document.getElementById('deskNav').classList.toggle('scrolled',window.scrollY>60);
+  // Mobile nav active
+  const sections=['hero','about','filosofia-wrap','experiencia','proyectos','habilidades','contacto'];
+  const navMap={'hero':'mni-home','experiencia':'mni-exp','proyectos':'mni-proj','habilidades':'mni-skill','contacto':'mni-contact'};
+  let current='hero';
+  sections.forEach(id=>{
+    const el=document.getElementById(id)||document.querySelector(`#${id}`);
+    if(el && window.scrollY>=el.offsetTop-200) current=id;
+  });
+  document.querySelectorAll('.mob-nav-item').forEach(i=>i.classList.remove('active'));
+  if(navMap[current]) document.getElementById(navMap[current])?.classList.add('active');
+});
+
+// =============================================
+// 4. REVEAL ON SCROLL
+// =============================================
+const reveals = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+},{threshold:.07});
+reveals.forEach((r,i)=>{ r.style.transitionDelay=(i%4)*.06+'s'; io.observe(r); });
+
+// =============================================
+// 5. COUNTER ANIMATION
+// =============================================
+function animCounter(el,target,dur=1400){
+  let cur=0; const step=target/60;
+  const iv=setInterval(()=>{
+    cur+=step;
+    if(cur>=target){cur=target;clearInterval(iv);}
+    el.textContent=target>=100?Math.floor(cur).toLocaleString('es-MX'):Math.floor(cur);
+  },dur/60);
+}
+const cio=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      animCounter(e.target,parseInt(e.target.dataset.target));
+      cio.unobserve(e.target);
+    }
+  });
+},{threshold:.5});
+document.querySelectorAll('.counter').forEach(c=>cio.observe(c));
+
+// =============================================
+// 6. AI TERMINAL TYPEWRITER
+// =============================================
+const termLines=[
+  {type:'muted',text:'# Sistema WMS · Men\'s International Collection'},
+  {type:'muted',text:'────────────────────────────────'},
+  {type:'prompt',text:'axel@mic-wms:~$ '},
+  {type:'cmd',text:'node server.js'},
+  {type:'out',text:'🚀 MongoDB conectado — Zona: Monterrey, MX'},
+  {type:'out',text:'🔔 Push Notifications activas'},
+  {type:'out',text:'📦 WMS v7.0 en puerto 10000'},
+  {type:'muted',text:''},
+  {type:'prompt',text:'axel@mic-wms:~$ '},
+  {type:'cmd',text:'curl /api/kardex | jq ".total"'},
+  {type:'out',text:'4287  ← SKUs activos en sistema'},
+  {type:'muted',text:''},
+  {type:'prompt',text:'axel@mic-wms:~$ '},
+  {type:'cmd',text:'claude "optimiza este aggregation pipeline"'},
+  {type:'out',text:'✓ Sugerencia aplicada — +340ms velocidad'},
+  {type:'muted',text:''},
+  {type:'prompt',text:'axel@mic-wms:~$ _'},
+];
+const termOut=document.getElementById('terminal-out');
+let ti=0,ci=0,curEl=null;
+function typeT(){
+  if(ti>=termLines.length)return;
+  const line=termLines[ti];
+  if(!curEl){curEl=document.createElement('div');curEl.className='tline';termOut.appendChild(curEl);}
+  const cls=line.type==='prompt'?'t-prompt':line.type==='cmd'?'t-cmd':line.type==='out'?'t-out':'t-muted';
+  if(ci===0){const sp=document.createElement('span');sp.className=cls;curEl.appendChild(sp);}
+  const sp=curEl.querySelector('span:last-child');
+  if(ci<line.text.length){
+    sp.textContent+=line.text[ci]; ci++;
+    termOut.scrollTop=termOut.scrollHeight;
+    setTimeout(typeT,line.type==='cmd'?50:12);
+  } else {
+    ti++;ci=0;curEl=null;
+    setTimeout(typeT,line.text===''?10:200);
+  }
+}
+const termIO=new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting){setTimeout(typeT,600);termIO.disconnect();}
+},{threshold:.3});
+if(termOut)termIO.observe(termOut);
+
+// =============================================
+// 7. SKILL BARS
+// =============================================
+const skillIO=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const w=e.target.dataset.w||'.8';
+      e.target.style.transform=`scaleX(${w})`;
+      skillIO.unobserve(e.target);
+    }
+  });
+},{threshold:.3});
+document.querySelectorAll('.skill-bar-fill').forEach(b=>skillIO.observe(b));
+
+// =============================================
+// 8. WMS DEMO — REAL FUNCTIONS
+// =============================================
+// Hardcoded suit data (real models from the system)
+const wmsKardex = [
+  { key:'33739|NEGRO', modelo:'33739', color:'NEGRO', total:51, lotes:{
+    'TEMPORADA-25':[ {talla:'36C/30',cantidad:4},{talla:'38C/32',cantidad:6},{talla:'40C/34',cantidad:5},{talla:'42C/36',cantidad:3},{talla:'44C/38',cantidad:2},{talla:'36R/30',cantidad:7},{talla:'38R/32',cantidad:8},{talla:'40R/34',cantidad:9},{talla:'42R/36',cantidad:5},{talla:'44R/38',cantidad:2} ],
+    'LOTE-A24':[ {talla:'38L/32',cantidad:3},{talla:'40L/34',cantidad:4},{talla:'42L/36',cantidad:3} ]
+  }},
+  { key:'4040|MARINO', modelo:'4040', color:'MARINO', total:48, lotes:{
+    'TEMPORADA-25':[ {talla:'36C/30',cantidad:3},{talla:'38C/32',cantidad:5},{talla:'40C/34',cantidad:6},{talla:'42C/36',cantidad:4},{talla:'38R/32',cantidad:9},{talla:'40R/34',cantidad:10},{talla:'42R/36',cantidad:7},{talla:'44R/38',cantidad:4} ],
+    'LOTE-A24':[ {talla:'40L/34',cantidad:5},{talla:'42L/36',cantidad:5} ]
+  }},
+  { key:'C67901-2B LF|NEGRO', modelo:'C67901-2B LF', color:'NEGRO', total:22, lotes:{
+    'LF-2025':[ {talla:'38C/32',cantidad:4},{talla:'40R/34',cantidad:7},{talla:'42R/36',cantidad:6},{talla:'44R/38',cantidad:3},{talla:'40L/34',cantidad:2} ]
+  }},
+  { key:'116-1|NEGRO', modelo:'116-1', color:'NEGRO', total:14, lotes:{
+    'LUXURY-100':[ {talla:'38C/32',cantidad:1},{talla:'40R/34',cantidad:4},{talla:'42R/36',cantidad:4},{talla:'44R/38',cantidad:3},{talla:'42L/36',cantidad:2} ]
+  }},
+  { key:'105-3|GRIS', modelo:'105-3', color:'GRIS', total:19, lotes:{
+    'TEMPORADA-25':[ {talla:'38R/32',cantidad:6},{talla:'40R/34',cantidad:7},{talla:'42R/36',cantidad:4},{talla:'44L/40',cantidad:2} ]
+  }},
+  { key:'005-1|NEGRO', modelo:'005-1', color:'NEGRO', total:3, lotes:{
+    'LOTE-A24':[ {talla:'46R/42',cantidad:1},{talla:'48R/44',cantidad:2} ]
+  }},
+  { key:'33739|MARINO', modelo:'33739', color:'MARINO', total:31, lotes:{
+    'TEMPORADA-25':[ {talla:'38R/32',cantidad:8},{talla:'40R/34',cantidad:9},{talla:'42R/36',cantidad:8},{talla:'40L/34',cantidad:6} ]
+  }},
+  { key:'M40901-2A|MARINO', modelo:'M40901-2A', color:'MARINO', total:25, lotes:{
+    'LF-2025':[ {talla:'38R/32',cantidad:7},{talla:'40R/34',cantidad:8},{talla:'42R/36',cantidad:7},{talla:'44R/38',cantidad:3} ]
+  }},
+];
+let wmsFiltered=[...wmsKardex];
+let wmsActive=null;
+
+function renderWMSTable(){
+  const tbody=document.getElementById('wms-tbody');
+  tbody.innerHTML='';
+  const kpis=wmsFiltered.reduce((a,item)=>a+item.total,0);
+  document.getElementById('kpi-skus').textContent=(4287+wmsFiltered.length-wmsKardex.length+kpis).toLocaleString('es-MX');
+  wmsFiltered.forEach(item=>{
+    const totalLotes=Object.keys(item.lotes).length;
+    const totalTallas=Object.values(item.lotes).flat().length;
+    const statusClass=item.total<=5?'pend':item.total<=15?'prog':'done';
+    const statusText=item.total<=5?'Bajo Stock':item.total<=15?'Limitado':'Disponible';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="text-align:center;"><input type="checkbox" style="accent-color:var(--orange);cursor:pointer;transform:scale(1.3);" onclick="event.stopPropagation()"></td>
+      <td><strong>${item.modelo}</strong></td>
+      <td style="color:var(--muted);font-weight:600;">${item.color}</td>
+      <td><span style="font-size:1.15rem;color:var(--orange);font-weight:800;">${item.total}</span> pz</td>
+      <td><span style="background:rgba(255,255,255,.05);padding:3px 8px;border-radius:6px;font-size:.68rem;color:var(--muted);">${totalLotes} Lotes</span> <span style="background:rgba(255,255,255,.05);padding:3px 8px;border-radius:6px;font-size:.68rem;color:var(--muted);">${totalTallas} Tallas</span></td>
+      <td><button class="wbtn n" style="padding:6px 12px;font-size:.7rem;" onclick="abrirPanelWMS('${item.key}')">👁️ Ver</button> <span class="sp ${statusClass}">${statusText}</span></td>
+    `;
+    tr.onclick=function(e){if(!e.target.matches('input,button'))abrirPanelWMS(item.key);};
+    tbody.appendChild(tr);
+  });
+}
+renderWMSTable();
+
+function filtrarTablaWMS(texto){
+  const terminos=texto.toLowerCase().trim().split(/\s+/).filter(t=>t!=='');
+  const textoLimpio=texto.trim().toLowerCase();
+  if(!textoLimpio){wmsFiltered=[...wmsKardex];}
+  else{
+    const hayExacto=wmsKardex.some(item=>{
+      const str=`${item.modelo} ${item.color} ${Object.values(item.lotes).flat().map(t=>t.talla).join(' ')}`.toLowerCase();
+      return str.split(/\s+/).includes(textoLimpio);
+    });
+    wmsFiltered=wmsKardex.filter(item=>{
+      const str=`${item.modelo} ${item.color} ${Object.values(item.lotes).flat().map(t=>t.talla).join(' ')}`.toLowerCase();
+      if(hayExacto&&textoLimpio.length>0) return str.split(/\s+/).includes(textoLimpio);
+      return terminos.every(t=>str.includes(t));
+    });
+  }
+  renderWMSTable();
+}
+
+function abrirPanelWMS(key){
+  const item=wmsKardex.find(i=>i.key===key);
+  if(!item)return;
+  wmsActive=item;
+  document.getElementById('sp-modelo').textContent=item.modelo;
+  document.getElementById('sp-color').textContent=item.color;
+  document.getElementById('sp-footer').classList.remove('show');
+  const body=document.getElementById('sp-body');
+  body.innerHTML='';
+  Object.keys(item.lotes).forEach(lote=>{
+    const items=item.lotes[lote];
+    const totalLote=items.reduce((a,i)=>a+i.cantidad,0);
+    const div=document.createElement('div');
+    div.className='lote-card';
+    div.innerHTML=`<div class="lote-label">Lote Físico</div><div class="lote-name" style="margin-bottom:10px;">${lote} — <span style="color:var(--orange);font-weight:800;">${totalLote} pz</span></div>`;
+    const pills=document.createElement('div');
+    pills.className='pills-grid';
+    items.sort((a,b)=>a.talla.localeCompare(b.talla)).forEach(it=>{
+      const pill=document.createElement('div');
+      pill.className=`pill${it.cantidad===0?' zero':''}`;
+      pill.innerHTML=`<span class="pill-talla">${it.talla}</span><span class="pill-qty">${it.cantidad} pz</span>`;
+      if(it.cantidad>0) pill.onclick=()=>seleccionarTallaWMS(pill,it.talla,lote,it.cantidad);
+      pills.appendChild(pill);
+    });
+    div.appendChild(pills);
+    body.appendChild(div);
+  });
+  document.getElementById('wms-overlay').classList.add('show');
+  document.getElementById('wms-panel').classList.add('open');
+}
+
+function seleccionarTallaWMS(pill,talla,lote,cantidad){
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  pill.classList.add('active');
+  document.getElementById('act-talla').textContent=talla;
+  document.getElementById('act-lote').textContent=lote;
+  document.getElementById('sp-footer').classList.add('show');
+}
+
+function cerrarPanelWMS(){
+  document.getElementById('wms-overlay').classList.remove('show');
+  document.getElementById('wms-panel').classList.remove('open');
+  wmsActive=null;
+}
+
+function wmsActionSalida(){
+  const toast=document.getElementById('wms-toast');
+  toast.textContent='📤 Salida registrada — Folio MOV-001247';
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2400);
+  document.getElementById('sp-footer').classList.remove('show');
+  cerrarPanelWMS();
+}
+
+function wmsAddEntry(){
+  const toast=document.getElementById('wms-toast');
+  toast.textContent='✅ Ingreso manual registrado en el sistema';
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2400);
+  const cur=parseInt(document.getElementById('kpi-skus').textContent.replace(/,/g,''))+1;
+  document.getElementById('kpi-skus').textContent=cur.toLocaleString('es-MX');
+}
+
+function wmsDownloadExcel(){
+  const toast=document.getElementById('wms-toast');
+  toast.textContent='📊 Generando Excel de Stock...';
+  toast.classList.add('show');
+  setTimeout(()=>{toast.textContent='✅ Excel descargado con éxito';},1200);
+  setTimeout(()=>toast.classList.remove('show'),2800);
+}
+
+// =============================================
+// 9. LABEL DEMO — REAL ZPL GENERATION + LABELARY
+// =============================================
+const labelCatalog=[
+  {id:'lf1',sku:'LF-116-N',modelo:'116-1',color:'NEGRO',tallaCalc:'42R/36',tallaCh:'42R',tela:'90% LANA 10% POLIAMIDE SUPER 120\'S'},
+  {id:'lf2',sku:'LF-33739-N',modelo:'33739',color:'NEGRO',tallaCalc:'40R/34',tallaCh:'40R',tela:'70% POLIÉSTER 30% VISCOSA'},
+  {id:'lf3',sku:'LF-33739-M',modelo:'33739',color:'MARINO',tallaCalc:'38R/32',tallaCh:'38R',tela:'70% POLIÉSTER 30% VISCOSA'},
+  {id:'lf4',sku:'LF-4040-M',modelo:'4040',color:'MARINO',tallaCalc:'44R/38',tallaCh:'44R',tela:'90% LANA 10% POLIAMIDE SUPER 120\'S'},
+  {id:'lf5',sku:'LF-C67-N',modelo:'C67901-2B LF',color:'NEGRO',tallaCalc:'40C/34',tallaCh:'40C',tela:'55% POLIÉSTER 45% LANA'},
+  {id:'lf6',sku:'LF-105-G',modelo:'105-3',color:'GRIS',tallaCalc:'38R/32',tallaCh:'38R',tela:'100% LANA SUPER 120\'S'},
+];
+let labelQueue=[];
+let labelCurrentIdx=0;
+let labelZPLList=[];
+let labelFiltered=[...labelCatalog];
+
+function renderLabelCatGrid(){
+  const grid=document.getElementById('label-cat-grid');
+  grid.innerHTML='';
+  labelFiltered.slice(0,12).forEach(p=>{
+    const inQ=labelQueue.find(q=>q.id===p.id);
+    const div=document.createElement('div');
+    div.className=`cat-card-label${inQ?' selected':''}`;
+    div.innerHTML=`<div class="cat-card-sku">${p.sku}</div><div class="cat-card-modelo">${p.modelo}</div><div class="cat-card-color">${p.color}</div><div class="cat-card-talla">Talla: ${p.tallaCalc}</div>`;
+    div.onclick=()=>labelAgregar(p.id);
+    grid.appendChild(div);
+  });
+}
+renderLabelCatGrid();
+
+function filtrarCatalogoLabel(texto){
+  const t=texto.toLowerCase().trim().split(/\s+/);
+  labelFiltered=labelCatalog.filter(p=>{
+    const s=`${p.modelo} ${p.color} ${p.tallaCalc} ${p.sku}`.toLowerCase();
+    return t.every(term=>s.includes(term));
+  });
+  renderLabelCatGrid();
+}
+
+function labelAgregar(id){
+  const prod=labelCatalog.find(p=>p.id===id);
+  if(!prod)return;
+  const idx=labelQueue.findIndex(q=>q.id===id);
+  if(idx>-1){labelQueue[idx].cantidad++;} else {labelQueue.push({...prod,cantidad:1});}
+  renderLabelQueueTable();
+  renderLabelCatGrid();
+  generarZPLYPreview();
+}
+
+function labelAddSample(){
+  const sample=labelCatalog[Math.floor(Math.random()*labelCatalog.length)];
+  labelAgregar(sample.id);
+}
+
+function renderLabelQueueTable(){
+  const tbody=document.getElementById('label-queue-tbody');
+  if(labelQueue.length===0){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted);font-size:.78rem;">Selecciona trajes del catálogo ↑</td></tr>';
+    return;
+  }
+  tbody.innerHTML='';
+  labelQueue.forEach((item,i)=>{
+    const total=item.cantidad*2;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><strong>${item.tallaCalc}</strong></td>
+      <td>${item.modelo.length>12?item.modelo.substring(0,12)+'...':item.modelo}</td>
+      <td>${item.color}</td>
+      <td><input type="number" value="${item.cantidad}" min="1" style="width:44px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:.75rem;font-family:'DM Sans',sans-serif;" onchange="labelUpdateCant(${i},this.value)"></td>
+      <td style="color:var(--green);font-weight:700;">${total}</td>
+      <td><button onclick="labelEliminar(${i})" style="background:#fee;color:#c0392b;border:none;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.72rem;font-weight:700;">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function labelUpdateCant(i,v){
+  const n=parseInt(v);
+  if(!isNaN(n)&&n>0) labelQueue[i].cantidad=n;
+  renderLabelQueueTable();
+  generarZPLYPreview();
+}
+
+function labelEliminar(i){
+  labelQueue.splice(i,1);
+  renderLabelQueueTable();
+  renderLabelCatGrid();
+  generarZPLYPreview();
+}
+
+function crearZPLLabel(item,cantidad){
+  const forro=document.getElementById('label-forro')?.value||'100% POLYESTER';
+  const tela=item.tela.replace(/Y/gi,'\\&');
+  let zpl=`~SD27\n^XA^CI28^PR3\n`;
+  zpl+=`^FO0,115^A0N,24^FB300,1,0,C^FDLUCIANO FERRETTI^FS\n`;
+  zpl+=`^FO0,143^A0N,34^FB300,1,0,C^FDTALLA: ${item.tallaCalc}^FS\n`;
+  zpl+=`^FO0,181^A0N,20^FB300,1,0,C^FDMODELO: ${item.modelo}^FS\n`;
+  zpl+=`^FO0,203^A0N,20^FB300,1,0,C^FDCOLOR: ${item.color}^FS\n`;
+  zpl+=`^FO0,225^A0N,18^FB300,2,0,C^FDTELA: ${tela}^FS\n`;
+  zpl+=`^FO0,263^A0N,18^FB300,1,0,C^FDFORRO: ${forro.toUpperCase()}^FS\n`;
+  zpl+=`^FO0,285^A0N,16^FB300,1,0,C^FDHECHO EN MEXICO POR:^FS\n`;
+  zpl+=`^FO0,303^A0N,16^FB300,1,0,C^FDMEN'S INTERNATIONAL COLLECTION, S.A. DE C.V.^FS\n`;
+  zpl+=`^FO0,321^A0N,16^FB300,1,0,C^FDAVE. VASCONCELOS 205-A PTE COL. DEL VALLE^FS\n`;
+  zpl+=`^FO0,339^A0N,16^FB300,1,0,C^FDGARZA GARCIA N.L. C.P. 66220^FS\n`;
+  zpl+=`^FO0,357^A0N,16^FB300,1,0,C^FDRFC: MIC100415435^FS\n`;
+  zpl+=`^PQ${cantidad*2}\n^XZ\n`;
+  return zpl;
+}
+
+function generarZPLYPreview(){
+  labelZPLList=[];
+  if(labelQueue.length===0){
+    document.getElementById('labelary-img').style.display='none';
+    document.getElementById('label-preview-fallback').style.display='none';
+    document.getElementById('labelary-loading').style.display='block';
+    document.getElementById('labelary-loading').textContent='Selecciona un traje para ver la etiqueta real →';
+    document.getElementById('lp-counter').style.display='none';
+    document.getElementById('lp-carousel').style.display='none';
+    return;
+  }
+  labelQueue.forEach(item=>{ labelZPLList.push({item,zpl:crearZPLLabel(item,item.cantidad)}); });
+  labelCurrentIdx=0;
+  mostrarEtiquetaActual();
+  document.getElementById('lp-counter').style.display='block';
+  document.getElementById('lp-carousel').style.display='flex';
+  document.getElementById('lp-cur').textContent=1;
+  document.getElementById('lp-tot').textContent=labelZPLList.length;
+}
+
+function mostrarEtiquetaActual(){
+  if(labelZPLList.length===0)return;
+  const {item,zpl}=labelZPLList[labelCurrentIdx];
+  // Try Labelary API
+  const encoded=encodeURIComponent(zpl);
+  const url=`https://api.labelary.com/v1/printers/8dpmm/labels/1.5x2.6/0/${encoded}`;
+  document.getElementById('labelary-loading').style.display='block';
+  document.getElementById('labelary-loading').textContent='⏳ Renderizando etiqueta ZPL con Labelary API...';
+  document.getElementById('labelary-img').style.display='none';
+  document.getElementById('label-preview-fallback').style.display='none';
+  const img=document.getElementById('labelary-img');
+  img.onload=function(){
+    document.getElementById('labelary-loading').style.display='none';
+    img.style.display='block';
+    document.getElementById('label-preview-fallback').style.display='none';
+  };
+  img.onerror=function(){
+    // Fallback to styled preview
+    document.getElementById('labelary-loading').style.display='none';
+    document.getElementById('label-preview-fallback').style.display='block';
+    img.style.display='none';
+    const forro=document.getElementById('label-forro')?.value||'100% POLYESTER';
+    document.getElementById('lp-brand').textContent='LUCIANO FERRETTI';
+    document.getElementById('lp-size').textContent=`TALLA: ${item.tallaCalc}`;
+    document.getElementById('lp-model').textContent=`MODELO: ${item.modelo}`;
+    document.getElementById('lp-color').textContent=`COLOR: ${item.color}`;
+    document.getElementById('lp-fabric').textContent=`${item.tela}\nFORRO: ${forro.toUpperCase()}`;
+  };
+  img.src=url;
+  document.getElementById('lp-cur').textContent=labelCurrentIdx+1;
+}
+
+function actualizarPreviewLabel(){generarZPLYPreview();}
+function labelPrev(){if(labelCurrentIdx>0){labelCurrentIdx--;mostrarEtiquetaActual();document.getElementById('lp-cur').textContent=labelCurrentIdx+1;}}
+function labelNext(){if(labelCurrentIdx<labelZPLList.length-1){labelCurrentIdx++;mostrarEtiquetaActual();document.getElementById('lp-cur').textContent=labelCurrentIdx+1;}}
+
+function labelGenerar(){
+  if(labelQueue.length===0){
+    labelAddSample(); labelAddSample();
+  }
+  generarZPLYPreview();
+  const btn=document.getElementById('label-print-btn');
+  btn.textContent='⏳ Enviando a Monarch...';
+  btn.style.background='#555';
+  setTimeout(()=>{btn.textContent='✅ IMPRESIÓN COMPLETA';btn.style.background='#27ae60';},1300);
+  setTimeout(()=>{btn.textContent='🖨️ IMPRIMIR LOTE NYLON';btn.style.background='var(--orange)';},3200);
+}
+
+function labelLimpiar(){
+  labelQueue=[];
+  labelZPLList=[];
+  renderLabelQueueTable();
+  renderLabelCatGrid();
+  document.getElementById('labelary-img').style.display='none';
+  document.getElementById('label-preview-fallback').style.display='none';
+  document.getElementById('labelary-loading').style.display='block';
+  document.getElementById('labelary-loading').textContent='Selecciona un traje para ver la etiqueta real →';
+  document.getElementById('lp-counter').style.display='none';
+  document.getElementById('lp-carousel').style.display='none';
+}
+
+// =============================================
+// 10. CATALOG CREATOR — REAL jsPDF
+// =============================================
+let catColores=[
+  {nombre:'NEGRO',tallas:'38C:1, 42R:1',emoji:'🤵'},
+  {nombre:'MARINO',tallas:'40R:2, 42R:1',emoji:'🤵'},
+];
+
+function renderCatColoresEditor(){
+  const container=document.getElementById('cat-colors-editor');
+  container.innerHTML='';
+  catColores.forEach((c,i)=>{
+    container.innerHTML+=`<div class="cat-color-box">
+      <div class="cat-color-title">Color ${i+1}</div>
+      <label class="cat-input-label">Nombre</label>
+      <input type="text" class="cat-input" value="${c.nombre}" oninput="catColores[${i}].nombre=this.value;catalogUpdate()" style="margin-bottom:6px;">
+      <label class="cat-input-label">Tallas (Ej: 38R:5, 40L:10)</label>
+      <input type="text" class="cat-input" value="${c.tallas}" oninput="catColores[${i}].tallas=this.value;catalogUpdate()">
+      ${catColores.length>1?`<button onclick="catColores.splice(${i},1);renderCatColoresEditor();catalogUpdate();" style="background:#800;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:.7rem;cursor:pointer;margin-top:6px;font-family:'DM Sans',sans-serif;">Eliminar</button>`:''}
+    </div>`;
+  });
+}
+renderCatColoresEditor();
+
+function catalogAddColor(){
+  if(catColores.length>=4){alert('Máximo 4 colores en el demo');return;}
+  catColores.push({nombre:'Nuevo Color',tallas:'40R:5',emoji:'🤵'});
+  renderCatColoresEditor();
+  catalogUpdate();
+}
+
+function catalogUpdate(){
+  document.getElementById('cat-pv-linea').textContent=document.getElementById('cat-linea').value;
+  document.getElementById('cat-pv-mod').textContent=document.getElementById('cat-mod').value;
+  const precio=parseFloat(document.getElementById('cat-precio').value)||0;
+  document.getElementById('cat-f-precio').innerHTML=`$${precio.toLocaleString('en-US',{minimumFractionDigits:2})} <span style="font-size:9px;color:#888;">+ IVA</span>`;
+  renderCatGrid();
+}
+
+function renderCatGrid(){
+  const grid=document.getElementById('cat-pv-grid');
+  grid.innerHTML='';
+  const count=catColores.length;
+  grid.className=`cat-grid ${count===1?'g1':count<=2?'g2':'g3'}`;
+  let grandTotal=0;
+  const precio=parseFloat(document.getElementById('cat-precio').value)||0;
+  catColores.forEach(c=>{
+    let piezas=0;
+    const tArr=c.tallas.split(',').map(t=>{
+      const p=t.split(':'); const q=parseInt(p[1])||0; piezas+=q;
+      return{n:p[0]?p[0].trim():'?',c:q};
+    });
+    grandTotal+=piezas;
+    if(count===1){
+      grid.innerHTML=`<div style="flex:1;background:#fff;border:1px solid #eee;display:flex;align-items:center;justify-content:center;border-radius:7px;padding:18px;font-size:5rem;">${c.emoji}</div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+          <div style="background:#333;color:#fff;font-size:18px;padding:12px;text-align:center;font-weight:700;text-transform:uppercase;margin-bottom:20px;border-radius:4px;">${c.nombre}</div>
+          <table class="cat-size-table"><thead><tr><th>TALLA DISPONIBLE</th><th>CANTIDAD (PZ)</th></tr></thead>
+          <tbody>${tArr.map(t=>`<tr><td>${t.n}</td><td>${t.c}</td></tr>`).join('')}<tr class="cat-row-total"><td>TOTAL INVENTARIO</td><td>${piezas}</td></tr></tbody></table>
+        </div>`;
+    } else {
+      const card=document.createElement('div');
+      card.className='cat-variant-card';
+      card.innerHTML=`<div class="cat-variant-img">${c.emoji}</div>
+        <div class="cat-variant-info">
+          <div class="cat-variant-name">${c.nombre}</div>
+          <table class="cat-size-table"><thead><tr><th>TALLA</th><th>CANT</th></tr></thead>
+          <tbody>${tArr.map(t=>`<tr><td>${t.n}</td><td>${t.c}</td></tr>`).join('')}<tr class="cat-row-total"><td>TOTAL</td><td>${piezas}</td></tr></tbody></table>
+        </div>`;
+      grid.appendChild(card);
+    }
+  });
+  const sub=grandTotal*precio; const iva=sub*.16; const total=sub+iva;
+  document.getElementById('cat-f-pzas').textContent=`${grandTotal} pz`;
+  document.getElementById('cat-f-sub').textContent=`$${sub.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+  document.getElementById('cat-f-iva').textContent=`$${iva.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+  document.getElementById('cat-f-total').textContent=`$${total.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+}
+catalogUpdate();
+
+async function catalogExportPDF(){
+  const btn=document.querySelector('[onclick="catalogExportPDF()"]');
+  if(btn){btn.textContent='⏳ Generando PDF...';btn.disabled=true;}
+  try{
+    const element=document.getElementById('cat-doc');
+    const canvas=await html2canvas(element,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+    const imgData=canvas.toDataURL('image/png');
+    const{jsPDF}=window.jspdf;
+    const w=element.offsetWidth; const h=element.offsetHeight;
+    const pdf=new jsPDF({orientation:'l',unit:'px',format:[w,h]});
+    pdf.addImage(imgData,'PNG',0,0,w,h);
+    const mod=document.getElementById('cat-mod').value.replace(/[^a-zA-Z0-9]/g,'_');
+    pdf.save(`FICHA_${mod}_Luciano_Ferretti.pdf`);
+    if(btn){btn.textContent='✅ PDF Descargado';setTimeout(()=>{btn.textContent='📑 Descargar PDF Real';btn.disabled=false;},2000);}
+  }catch(e){
+    console.error(e);
+    if(btn){btn.textContent='⚠️ Error al generar';setTimeout(()=>{btn.textContent='📑 Descargar PDF Real';btn.disabled=false;},2000);}
+  }
+}
+
+// =============================================
+// 11. VIDRIOS DEMO
+// =============================================
+function toggleFaq(el){
+  const item=el.parentElement;
+  const wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.vnd-faq-item').forEach(i=>i.classList.remove('open'));
+  if(!wasOpen)item.classList.add('open');
+}
+
+// =============================================
+// 12. ODOO MIGRATION DEMO
+// =============================================
+const odooTermLines=[
+  {ts:'[08:30:01]',cls:'ot-info',txt:'ℹ️ Iniciando migración masiva de inventario...'},
+  {ts:'[08:30:02]',cls:'ot-ok',txt:'✓ SKU LF-116-N | 116-1 NEGRO | Variantes: 8 tallas'},
+  {ts:'[08:30:02]',cls:'ot-ok',txt:'✓ SKU LF-33739-N | 33739 NEGRO | Variantes: 10 tallas'},
+  {ts:'[08:30:03]',cls:'ot-info',txt:'ℹ️ Procesando lote #128 de 342...'},
+  {ts:'[08:30:03]',cls:'ot-ok',txt:'✓ SKU LF-4040-M | 4040 MARINO | Variantes: 9 tallas'},
+  {ts:'[08:30:04]',cls:'ot-warn',txt:'⚠ C67901-2B GRIS 38C — ajustando formato talla'},
+  {ts:'[08:30:04]',cls:'ot-ok',txt:'✓ Variante corregida y migrada exitosamente'},
+  {ts:'[08:30:05]',cls:'ot-ok',txt:'✓ SKU M40901-2A | MARINO | Variantes: 7 tallas'},
+  {ts:'[08:30:06]',cls:'ot-info',txt:'ℹ️ Verificando integridad de stocks...'},
+  {ts:'[08:30:07]',cls:'ot-ok',txt:'✓ 4,287 SKUs migrados · Tasa de éxito: 100%'},
+  {ts:'[08:30:07]',cls:'ot-ok',txt:'🎉 MIGRACIÓN COMPLETADA — Ahorro: ~$40,000 USD'},
+];
+const odooIO=new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting){
+    // Animate progress bars
+    document.querySelectorAll('.prog-fill.odoo-prog').forEach((b,i)=>{
+      setTimeout(()=>{b.style.transform='scaleX(1)';},i*250);
+    });
+    // Type terminal
+    const terminal=document.getElementById('odoo-terminal');
+    let idx=0;
+    function addOdooLine(){
+      if(idx>=odooTermLines.length)return;
+      const {ts,cls,txt}=odooTermLines[idx];
+      const div=document.createElement('div');
+      div.className='ot-line';
+      div.innerHTML=`<span class="ot-ts">${ts}</span><span class="${cls}">${txt}</span>`;
+      terminal.appendChild(div);
+      terminal.scrollTop=terminal.scrollHeight;
+      idx++;
+      setTimeout(addOdooLine,300);
+    }
+    setTimeout(addOdooLine,500);
+    odooIO.disconnect();
+  }
+},{threshold:.3});
+const odooEl=document.getElementById('odoo-demo');
+if(odooEl)odooIO.observe(odooEl);
+
+// =============================================
+// 13. MOBILE ACTIVE NAV ON SCROLL
+// =============================================
+const sectionIds=['hero','about','experiencia','proyectos','habilidades','contacto'];
+const mniMap={'hero':'mni-home','about':'mni-home','experiencia':'mni-exp','proyectos':'mni-proj','habilidades':'mni-skill','contacto':'mni-contact'};
+window.addEventListener('scroll',()=>{
+  let cur='hero';
+  sectionIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&window.scrollY>=el.offsetTop-250)cur=id;
+  });
+  document.querySelectorAll('.mob-nav-item').forEach(i=>i.classList.remove('active'));
+  const mn=document.getElementById(mniMap[cur]);
+  if(mn)mn.classList.add('active');
+},{ passive:true });
+
+// =============================================
+// 14. iOS HAPTICS (visual feedback)
+// =============================================
+if(window._isIOS){
+  document.querySelectorAll('.demo-btn,.lbtn,.wbtn,.contact-link,.nav-cta').forEach(el=>{
+    el.addEventListener('touchstart',()=>el.style.transform='scale(0.96)',{passive:true});
+    el.addEventListener('touchend',()=>el.style.transform='',{passive:true});
+  });
+}
+
+// =============================================
+// 15. PREVENT iOS BOUNCE BUT ALLOW SCROLL
+// =============================================
+if(window._isIOS){
+  document.body.style.overscrollBehavior='none';
+}
+</script>
+</body>
+</html>
