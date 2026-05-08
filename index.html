@@ -1035,13 +1035,18 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
         function etiquetaAnterior_monarch() { if (indiceActual_monarch > 0) { indiceActual_monarch--; actualizarVistaPrevia_monarch(); } }
         function siguienteEtiqueta_monarch() { if (indiceActual_monarch < listaEtiquetas_monarch.length - 1) { indiceActual_monarch++; actualizarVistaPrevia_monarch(); } }
 
-        function imprimirPorRed_monarch() {
+function imprimirPorRed_monarch() {
             const ip = document.getElementById('ipImpresora_monarch').value.trim();
             if (!ip) return alert("Ingresa la IP de Monarch.");
             localStorage.setItem('zebraIP_Nylon', ip);
-            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: codigoZPLFinal_monarch })
-            .then(() => alert(`✅ Lote enviado a: ${ip}`))
-            .catch(error => alert("❌ Error de conexión LAN."));
+            
+            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
+            
+            setTimeout(() => {
+                fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: codigoZPLFinal_monarch })
+                .then(() => alert(`✅ Lote enviado a: ${ip}`))
+                .catch(error => alert("❌ Error de conexión LAN."));
+            }, 10000);
         }
 
         // =========================================================================
@@ -1162,15 +1167,20 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
         function etiquetaAnterior_recibo() { if (indiceActual_recibo > 0) { indiceActual_recibo--; actualizarVistaPrevia_recibo(); } }
         function siguienteEtiqueta_recibo() { if (indiceActual_recibo < listaEtiquetas_recibo.length - 1) { indiceActual_recibo++; actualizarVistaPrevia_recibo(); } }
 
-        function imprimirPorRed_recibo() {
+function imprimirPorRed_recibo() {
             const ip = document.getElementById('ipImpresora_recibo').value.trim();
             const textoZPL = document.getElementById('outputArea_recibo').value;
             if (!ip) return alert("Ingresa IP de Zebra Cartón.");
             if (!textoZPL) return alert("No hay datos.");
             localStorage.setItem('zebraIP_Carton', ip);
-            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
-            .then(() => alert(`✅ Recibos enviados a: ${ip}`))
-            .catch(error => alert("❌ Error LAN."));
+            
+            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
+            
+            setTimeout(() => {
+                fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
+                .then(() => alert(`✅ Recibos enviados a: ${ip}`))
+                .catch(error => alert("❌ Error LAN."));
+            }, 10000);
         }
 
         // =========================================================================
@@ -1341,15 +1351,20 @@ function dibujarBloque(item, yOffset) {
         function etiquetaAnterior_tienda() { if (indiceActual_tienda > 0) { indiceActual_tienda--; actualizarVistaPrevia_tienda(); } }
         function siguienteEtiqueta_tienda() { if (indiceActual_tienda < listaEtiquetas_tienda.length - 1) { indiceActual_tienda++; actualizarVistaPrevia_tienda(); } }
 
-        function imprimirPorRed_tienda() {
+function imprimirPorRed_tienda() {
             const ip = document.getElementById('ipImpresora_tienda').value.trim();
             const textoZPL = document.getElementById('outputArea_tienda').value;
             if (!ip) return alert("Ingresa IP de Zebra Cartón.");
             if (!textoZPL) return alert("Ejecuta el diseño primero.");
             localStorage.setItem('zebraIP_Carton', ip);
-            fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
-            .then(() => alert(`✅ Lote de Tienda enviado a: ${ip}`))
-            .catch(error => alert("❌ Error LAN."));
+            
+            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
+            
+            setTimeout(() => {
+                fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
+                .then(() => alert(`✅ Lote de Tienda enviado a: ${ip}`))
+                .catch(error => alert("❌ Error LAN."));
+            }, 10000);
         }
 
         </script>
