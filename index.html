@@ -456,6 +456,43 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
             btn.classList.add('active');
         }
 
+         // ===============================================
+        // LÓGICA DEL TEMPORIZADOR ANIMADO
+        // ===============================================
+        let intervaloImpresion;
+        let timeoutImpresion;
+
+        function iniciarTemporizadorImpresion(callbackImpresion) {
+            const overlay = document.getElementById('printTimerOverlay');
+            const countdownEl = document.getElementById('timerCountdown');
+            let tiempoRestante = 10;
+            
+            // Mostrar la ventana y reiniciar el número
+            overlay.style.display = 'flex';
+            countdownEl.innerText = tiempoRestante;
+
+            // Iniciar cuenta regresiva visual
+            intervaloImpresion = setInterval(() => {
+                tiempoRestante--;
+                countdownEl.innerText = tiempoRestante;
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervaloImpresion);
+                }
+            }, 1000);
+
+            // Ejecutar la impresión real a los 10 segundos
+            timeoutImpresion = setTimeout(() => {
+                overlay.style.display = 'none'; // Ocultar ventana
+                callbackImpresion(); // Llamar a la función de imprimir original
+            }, 10000);
+        }
+
+        function cancelarImpresionAnimada() {
+            clearInterval(intervaloImpresion);
+            clearTimeout(timeoutImpresion);
+            document.getElementById('printTimerOverlay').style.display = 'none';
+        }
+
         function cambiarModoMonarch(modo) {
             const panelBuscador = document.getElementById('panel_buscador_monarch');
             const panelMasivo = document.getElementById('panel_masivo_monarch');
@@ -1040,13 +1077,11 @@ function imprimirPorRed_monarch() {
             if (!ip) return alert("Ingresa la IP de Monarch.");
             localStorage.setItem('zebraIP_Nylon', ip);
             
-            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
-            
-            setTimeout(() => {
+            iniciarTemporizadorImpresion(() => {
                 fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: codigoZPLFinal_monarch })
                 .then(() => alert(`✅ Lote enviado a: ${ip}`))
                 .catch(error => alert("❌ Error de conexión LAN."));
-            }, 10000);
+            });
         }
 
         // =========================================================================
@@ -1174,13 +1209,11 @@ function imprimirPorRed_recibo() {
             if (!textoZPL) return alert("No hay datos.");
             localStorage.setItem('zebraIP_Carton', ip);
             
-            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
-            
-            setTimeout(() => {
+            iniciarTemporizadorImpresion(() => {
                 fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
                 .then(() => alert(`✅ Recibos enviados a: ${ip}`))
                 .catch(error => alert("❌ Error LAN."));
-            }, 10000);
+            });
         }
 
         // =========================================================================
@@ -1358,15 +1391,26 @@ function imprimirPorRed_tienda() {
             if (!textoZPL) return alert("Ejecuta el diseño primero.");
             localStorage.setItem('zebraIP_Carton', ip);
             
-            alert("⏳ Temporizador iniciado: El lote comenzará a imprimirse en 10 segundos. ¡Camina con calma a la impresora! 🚶‍♂️");
-            
-            setTimeout(() => {
+            iniciarTemporizadorImpresion(() => {
                 fetch(`http://${ip}/pstprnt`, { method: 'POST', mode: 'no-cors', body: textoZPL })
                 .then(() => alert(`✅ Lote de Tienda enviado a: ${ip}`))
                 .catch(error => alert("❌ Error LAN."));
-            }, 10000);
+            });
         }
 
         </script>
+
+<div id="printTimerOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(31, 41, 55, 0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+        <div style="background: white; padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-width: 400px; width: 90%; transform: translateY(0); transition: all 0.3s;">
+            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.6rem;">🖨️ Preparando Impresión</h2>
+            <p style="color: #4b5563; font-size: 1.05rem; margin-bottom: 25px;">Por favor, camina hacia la impresora con calma...</p>
+            
+            <div style="position: relative; width: 120px; height: 120px; margin: 0 auto; display: flex; justify-content: center; align-items: center; border-radius: 50%; background: #e0f2fe; border: 8px solid #0ea5e9; box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2);">
+                <span id="timerCountdown" style="font-size: 3.5rem; font-weight: bold; color: #0369a1;">10</span>
+            </div>
+            
+            <button onclick="cancelarImpresionAnimada()" style="margin-top: 35px; background: #fee2e2; color: #dc2626; border: 1px solid #f87171; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; width: 100%;">❌ Cancelar Impresión</button>
+        </div>
+    </div>
 </body>
 </html>
