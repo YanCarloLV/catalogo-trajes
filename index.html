@@ -462,10 +462,10 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
         let intervaloImpresion;
         let timeoutImpresion;
 
-        function iniciarTemporizadorImpresion(callbackImpresion) {
+function iniciarTemporizadorImpresion(callbackImpresion) {
             const overlay = document.getElementById('printTimerOverlay');
             const countdownEl = document.getElementById('timerCountdown');
-            let tiempoRestante = 10;
+            let tiempoRestante = 5; // <-- Cambiado de 10 a 5
             
             // Mostrar la ventana y reiniciar el número
             overlay.style.display = 'flex';
@@ -480,11 +480,11 @@ const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/YanCarloLV/catalogo-
                 }
             }, 1000);
 
-            // Ejecutar la impresión real a los 10 segundos
+            // Ejecutar la impresión real a los 5 segundos
             timeoutImpresion = setTimeout(() => {
                 overlay.style.display = 'none'; // Ocultar ventana
                 callbackImpresion(); // Llamar a la función de imprimir original
-            }, 10000);
+            }, 5000); // <-- Cambiado de 10000 a 5000 milisegundos
         }
 
         function cancelarImpresionAnimada() {
