@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Extractor DOCX a Etiquetas - 4x8</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <style>
+        @page { size: 100mm 201mm; margin: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f4f4f9; }
+
+        /* ── BARRA SUPERIOR ─────────────────────────────────── */
+        .topbar {
+            background: #1e272e;
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .topbar h2 { margin: 0 0 12px; font-size: 16pt; }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="file"] {
+            font-size: 14px;
+            background: #485460;
+            padding: 9px 12px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        .btn {
+            padding: 10px 22px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #0fb9b1;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background .2s;
+        }
+        .btn:hover { background: #0aa09a; }
+        .btn-print { background: #f39c12; }
+        .btn-print:hover { background: #d68910; }
+        #status { margin-top: 10px; font-size: 13px; font-weight: bold; color: #0fb9b1; min-height: 18px; }
+
+        /* ── SEPARADOR DE PARTIDA (solo pantalla) ───────────── */
+        .partida-sep {
+            width: 100mm;
+            margin: 28px auto 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .partida-sep::before, .partida-sep::after {
+            content: ''; flex: 1; height: 3px;
+            background: #0fb9b1; border-radius: 2px;
+        }
+        .partida-sep-label {
+            background: #0fb9b1;
+            color: white;
+            font-size: 10pt;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* ── ETIQUETA 100×201 mm ────────────────────────────── */
+        .label {
+            width: 100mm;
+            height: 201mm;
+            background: white;
+            margin: 8px auto 0;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #d1d8e0;
+            page-break-after: always;
+            overflow: visible;
+        }
+
+        /* ── BARRA DE HERRAMIENTAS POR ETIQUETA ─────────────── */
+        .label-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            background: #f0fffe;
+            border-bottom: 1px dashed #0fb9b1;
+            flex-shrink: 0;
+            position: sticky;
+        }
+        .label-toolbar .toolbar-hint {
+            font-size: 9pt;
+            color: #777;
+            margin-right: auto;
+            padding-left: 2px;
+        }
+        .btn-editar {
+            padding: 3px 11px;
+            font-size: 10px;
+            cursor: pointer;
+            border: 1px solid #0fb9b1;
+            border-radius: 4px;
+            background: white;
+            color: #0a8a84;
+            font-weight: bold;
+            transition: background .15s;
+        }
+        .btn-editar:hover { background: #e4faf9; }
+        .btn-eliminar {
+            padding: 3px 11px;
+            font-size: 10px;
+            cursor: pointer;
+            border: 1px solid #c0392b;
+            border-radius: 4px;
+            background: white;
+            color: #c0392b;
+            font-weight: bold;
+            transition: background .15s;
+        }
+        .btn-eliminar:hover { background: #fde8e8; }
+
+        /* ── CUERPO IMPRIMIBLE ──────────────────────────────── */
+        .label-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 4mm 5mm 3mm;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 3px solid black;
+            padding-bottom: 3px;
+            margin-bottom: 5px;
+            font-size: 11pt;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .subtitle {
+            font-size: 15pt;
+            font-weight: bold;
+            text-align: center;
+            background: #000;
+            color: #fff;
+            padding: 5px 8px;
+            margin-bottom: 7px;
+            border-radius: 4px;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+            /* Forzar que el fondo negro se imprima en PDF y papel */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .description {
+            font-size: 9.5pt;
+            line-height: 1.3;
+            text-align: justify;
+            flex-grow: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .footer-info {
+            margin-top: 5px;
+            font-size: 8pt;
+            text-align: center;
+            border-top: 1px solid #ccc;
+            padding-top: 3px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* ── BOTÓN VALIDAR ──────────────────────────────────── */
+        .btn-validar {
+            padding: 3px 11px;
+            font-size: 10px;
+            cursor: pointer;
+            border: 1px solid #27ae60;
+            border-radius: 4px;
+            background: white;
+            color: #27ae60;
+            font-weight: bold;
+            transition: background .15s, color .15s;
+        }
+        .btn-validar:hover { background: #eafaf1; }
+
+        /* Estado: etiqueta validada */
+        .label.validada {
+            border: 2.5px solid #27ae60 !important;
+        }
+        .label.validada .label-toolbar {
+            background: #eafaf1;
+            border-bottom-color: #27ae60;
+        }
+        .label.validada .btn-validar {
+            background: #27ae60;
+            color: white;
+        }
+        .label.validada .label-body {
+            opacity: 1;
+        }
+        /* Sello visual de VALIDADO sobre la etiqueta */
+        .sello-validado {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            font-size: 28pt;
+            font-weight: 900;
+            color: rgba(39, 174, 96, 0.18);
+            border: 5px solid rgba(39, 174, 96, 0.18);
+            border-radius: 8px;
+            padding: 6px 14px;
+            letter-spacing: 3px;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .label.validada .sello-validado { display: block; }
+        .label { position: relative; }
+
+        /* Contador flotante de validadas */
+        #contador-validadas {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            background: #1e272e;
+            color: white;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 12pt;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            z-index: 200;
+            display: none;
+            gap: 8px;
+            align-items: center;
+        }
+        #contador-validadas span.num { color: #0fb9b1; font-size: 15pt; }
+        #contador-validadas span.total { color: #aaa; font-size: 10pt; }
+
+        @media print {
+            #contador-validadas { display: none !important; }
+            .sello-validado { display: none !important; }
+        }
+
+        /* ── MODO EDICIÓN ───────────────────────────────────── */
+        .editando .label-toolbar { background: #fff8e1; border-bottom-color: #f39c12; }
+        .editando [contenteditable="true"] {
+            outline: 1.5px dashed #f39c12;
+            border-radius: 2px;
+            cursor: text;
+            min-height: 1em;
+        }
+        .editando [contenteditable="true"]:focus {
+            outline: 2px solid #f39c12;
+            background: rgba(255, 248, 200, 0.4);
+        }
+        .editando .subtitle[contenteditable="true"]:focus {
+            background: #1a1a1a;
+        }
+
+        /* ── IMPRESIÓN ──────────────────────────────────────── */
+        @media print {
+            /* Forzar impresión de fondos en TODOS los elementos */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .topbar        { display: none !important; }
+            .partida-sep   { display: none !important; }
+            .label-toolbar { display: none !important; }
+            /* Solo quitar outline de edición — NO tocar background */
+            [contenteditable] { outline: none !important; }
+            .label {
+                margin: 0 !important;
+                border: none !important;
+                overflow: hidden !important;
+            }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <h2>📦 Extractor de Etiquetas — Word → 4×6</h2>
+    <div class="controls">
+        <input type="file" id="docx-upload" accept=".docx">
+        <button class="btn" onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
+        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    </div>
+    <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
+</div>
+
+<div id="contador-validadas">
+    ✅ <span class="num" id="cnt-val">0</span>&nbsp;<span class="total" id="cnt-tot">/ 0 validadas</span>
+</div>
+
+<div id="labels-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CARGA Y CONVERSIÓN DEL DOCX
+// ═══════════════════════════════════════════════════════════════
+function procesarDOCX() {
+    const fileInput = document.getElementById('docx-upload');
+    const status    = document.getElementById('status');
+    const container = document.getElementById('labels-container');
+
+    if (!fileInput.files.length) {
+        alert("⚠️ Selecciona primero un archivo .docx");
+        return;
+    }
+
+    status.innerText    = "⏳ Convirtiendo Word…";
+    container.innerHTML = "";
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        mammoth.convertToHtml({ arrayBuffer: e.target.result })
+            .then(result => {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = result.value;
+                extraerDatos(tmp, container, status);
+            })
+            .catch(err => {
+                status.innerText = "❌ Error al leer el archivo: " + err.message;
+            });
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXTRACCIÓN — detecta PARTIDA dentro Y fuera de tablas
+// ═══════════════════════════════════════════════════════════════
+function extraerDatos(htmlDiv, container, status) {
+    let currentPartida = "?";
+    let currentArea    = "ALMACÉN CENTRAL";
+    let lastSepPartida = null;
+    let total          = 0;
+
+    const PRENDAS = [
+        "SACO:", "PANTALÓN:", "PANTALON:", "FALDA:", "CAMISA:", "CHAMARRA:",
+        "BATA:", "BLUSA:", "ZAPATO:", "ZAPATOS:", "PLAYERA:", "FILIPINA:",
+        "OVEROL:", "CHALECO:", "CORBATA:", "GORRO:", "COFIA:", "MANDIL:",
+        "PANTUFLAS:", "CINTURÓN:", "CINTURON:", "BOTAS:", "BOTA:",
+        "CALCETÍN:", "CALCETIN:", "PANTS:", "SUDADERA:", "GUANTE:",
+        "IMPERMEABLE:", "SUETER:", "SUÉTER:", "CASCO:", "LENTES:",
+        "MOCHILA:", "FAJA:", "CAMISOLA:", "CORBATA:"
+    ];
+    const regexPrendas = new RegExp("(" + PRENDAS.join("|") + ")", "gi");
+
+    // Intenta leer número y área de un texto que contenga "PARTIDA X"
+    function trySetPartida(texto) {
+        const m = texto.match(/PARTIDA\s+(\d+)\.?\s*(.*)/i);
+        if (!m) return false;
+        currentPartida = m[1].trim();
+        currentArea    = m[2].trim() || "ÁREA NO ESPECIFICADA";
+        return true;
+    }
+
+    // Inserta separador visual si la partida cambió desde el último separador
+    function sepSiCambia() {
+        if (currentPartida === lastSepPartida) return;
+        lastSepPartida = currentPartida;
+        const sep = document.createElement('div');
+        sep.className = 'partida-sep';
+        sep.innerHTML = `<span class="partida-sep-label">▶ Partida ${currentPartida} — ${currentArea}</span>`;
+        container.appendChild(sep);
+    }
+
+    Array.from(htmlDiv.children).forEach(el => {
+
+        // ── Párrafos y encabezados FUERA de tablas ────────────
+        if (el.tagName === 'P' || /^H\d$/.test(el.tagName)) {
+            trySetPartida(el.textContent.trim());
+            return;
+        }
+
+        // ── Tablas ────────────────────────────────────────────
+        if (el.tagName !== 'TABLE') return;
+
+        el.querySelectorAll('tr').forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (!cells.length) return;
+
+            const primerTexto = cells[0].textContent.trim();
+            const esNumCons   = /^[0-9]+(\.[0-9]+)?$/.test(primerTexto);
+
+            // ── Fila NO numérica: puede ser encabezado de partida ─
+            if (!esNumCons) {
+                // Buscar "PARTIDA X" en cualquier celda de esta fila
+                // (cubre filas fusionadas que abarcan toda la tabla)
+                const textoFila = row.textContent.trim();
+                if (textoFila.toUpperCase().includes('PARTIDA')) {
+                    trySetPartida(textoFila);
+                }
+                return; // No es fila de artículo → saltar
+            }
+
+            // ── Fila de artículo ──────────────────────────────
+            if (cells.length < 2) return;
+
+            const parrs    = Array.from(cells[1].querySelectorAll('p'))
+                                  .map(p => p.textContent.trim()).filter(Boolean);
+            let fullText   = parrs.length ? parrs.join(" \n ") : cells[1].textContent.trim();
+
+            // Omitir filas vacías → evita etiquetas en blanco
+            if (!fullText || fullText.trim().length < 5) return;
+
+            const frags  = fullText.split(regexPrendas);
+            const titulo = frags[0].trim();
+
+            if (frags.length === 1) {
+                sepSiCambia();
+                crearEtiqueta(currentPartida, primerTexto, "ARTÍCULO ÚNICO",
+                              fullText, currentArea, container);
+                total++;
+            } else {
+                for (let k = 1; k < frags.length; k += 2) {
+                    const prenda = frags[k].toUpperCase().replace(":", "").trim();
+                    const desc   = (frags[k + 1] || '').trim().replace(/\s{2,}/g, ' ');
+                    const html   = `<b>${titulo}</b><br><br>${desc}`;
+                    sepSiCambia();
+                    crearEtiqueta(currentPartida, primerTexto, prenda,
+                                  html, currentArea, container);
+                    total++;
+                }
+            }
+        });
+    });
+
+    if (!total) {
+        status.innerText = "⚠️ No se detectaron artículos. Verifica el archivo.";
+        return;
+    }
+
+    status.innerText = `⏳ ${total} etiquetas generadas. Ajustando tipografía…`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        ajustarTextos();
+        actualizarContador();
+        status.innerText =
+            `✅ ${total} etiquetas listas. Usa ✏️ Editar para corregir campos o 🗑️ Eliminar para quitar duplicadas.`;
+    }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CREAR ETIQUETA (barra de herramientas + cuerpo editable)
+// ═══════════════════════════════════════════════════════════════
+function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
+    const div = document.createElement('div');
+    div.className = 'label';
+
+    // Clave única para localStorage: combinación partida + consecutivo + prenda
+    const lsKey = `val_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}`;
+    div.dataset.lskey = lsKey;
+
+    div.innerHTML = `
+        <div class="sello-validado">✔ VALIDADA</div>
+        <div class="label-toolbar">
+            <span class="toolbar-hint">Partida ${partida} · CONS ${cons}</span>
+            <button class="btn-validar"  onclick="toggleValidar(this)" title="Marcar como validada">☐ Validar</button>
+            <button class="btn-editar"   onclick="toggleEditar(this)">✏️ Editar</button>
+            <button class="btn-eliminar" onclick="eliminarEtiqueta(this)">🗑️ Eliminar</button>
+        </div>
+        <div class="label-body">
+            <div class="header">
+                <span contenteditable="false" spellcheck="false">PARTIDA: ${partida}</span>
+                <span contenteditable="false" spellcheck="false">No. CONS: ${cons}</span>
+            </div>
+            <div class="subtitle"     contenteditable="false" spellcheck="false">PIEZA: ${prenda}</div>
+            <div class="description"  contenteditable="false" spellcheck="false">
+                <strong>Características Técnicas:</strong><br><br>${descripcion}
+            </div>
+            <div class="footer-info"  contenteditable="false" spellcheck="false">
+                ${area}<br>
+            </div>
+        </div>
+    `;
+
+    // Restaurar estado de validación desde localStorage
+    if (localStorage.getItem(lsKey) === '1') {
+        div.classList.add('validada');
+        div.querySelector('.btn-validar').textContent = '☑ Validada';
+    }
+
+    container.appendChild(div);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EDICIÓN — activa / desactiva campos editables
+// ═══════════════════════════════════════════════════════════════
+function toggleEditar(btn) {
+    const label    = btn.closest('.label');
+    const editando = label.classList.toggle('editando');
+    label.querySelectorAll('[contenteditable]')
+         .forEach(c => c.setAttribute('contenteditable', editando ? 'true' : 'false'));
+
+    btn.textContent = editando ? '✅ Listo' : '✏️ Editar';
+
+    if (!editando) {
+        // Reajustar texto por si el usuario cambió el contenido
+        requestAnimationFrame(() => {
+            const desc = label.querySelector('.description');
+            if (desc) ajustarUnTexto(desc);
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ELIMINAR — borra la etiqueta y el separador si queda vacío
+// ═══════════════════════════════════════════════════════════════
+function eliminarEtiqueta(btn) {
+    const label    = btn.closest('.label');
+    const anterior = label.previousElementSibling;
+    label.remove();
+
+    // Si el separador anterior se quedó sin etiquetas, quitarlo también
+    if (anterior && anterior.classList.contains('partida-sep')) {
+        const siguiente = anterior.nextElementSibling;
+        if (!siguiente || siguiente.classList.contains('partida-sep') || !siguiente) {
+            anterior.remove();
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTO-FIT TIPOGRAFÍA
+// ═══════════════════════════════════════════════════════════════
+function ajustarTextos() {
+    document.querySelectorAll('.description').forEach(ajustarUnTexto);
+}
+
+function ajustarUnTexto(desc) {
+    const MAX = 14.0, MIN = 6.0, STEP = 0.5, TOL = 2;
+    let size = MAX;
+    aplicarSize(desc, size);
+    if (desc.scrollHeight <= desc.clientHeight + TOL) return;
+    while (size > MIN) {
+        size = Math.round((size - STEP) * 10) / 10;
+        aplicarSize(desc, size);
+        if (desc.scrollHeight <= desc.clientHeight + TOL) break;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VALIDACIÓN — palomita con persistencia en localStorage
+// ═══════════════════════════════════════════════════════════════
+function toggleValidar(btn) {
+    const label    = btn.closest('.label');
+    const lsKey    = label.dataset.lskey;
+    const validada = label.classList.toggle('validada');
+
+    btn.textContent = validada ? '☑ Validada' : '☐ Validar';
+
+    // Guardar o borrar en localStorage
+    if (validada) {
+        localStorage.setItem(lsKey, '1');
+    } else {
+        localStorage.removeItem(lsKey);
+    }
+
+    actualizarContador();
+}
+
+function actualizarContador() {
+    const todas     = document.querySelectorAll('.label');
+    const validadas = document.querySelectorAll('.label.validada');
+    const contador  = document.getElementById('contador-validadas');
+
+    if (!todas.length) { contador.style.display = 'none'; return; }
+
+    document.getElementById('cnt-val').textContent  = validadas.length;
+    document.getElementById('cnt-tot').textContent  = `/ ${todas.length} validadas`;
+    contador.style.display = 'flex';
+}
+
+function aplicarSize(el, pt) {
+    el.style.fontSize   = pt + 'pt';
+    el.style.lineHeight = pt < 7 ? '1.15' : '1.3';
+}
+</script>
+</body>
+</html>
