@@ -361,7 +361,7 @@
         <input id="m-partida"  type="text" placeholder="Ej: 7">
         <label>No. Consecutivo (CONS)</label>
         <input id="m-cons"     type="text" placeholder="Ej: 4">
-        <label>Pieza / Prenda</label>
+        <label> / Prenda</label>
         <input id="m-prenda"   type="text" placeholder="Ej: CAMISA">
         <label>Descripción / Características Técnicas</label>
         <textarea id="m-desc"  placeholder="Escribe aquí la descripción de la pieza..."></textarea>
@@ -396,9 +396,11 @@ let ignorarFirebase = new Set(); // keys que estamos editando localmente
 
 function initFirebase() {
     const fbStatus = document.getElementById('fb-status');
+    const container = document.getElementById('labels-container');
+    
     if (FIREBASE_CONFIG.apiKey === "TU_API_KEY") {
         fbStatus.style.color = '#e74c3c';
-        fbStatus.textContent = '🔴 Firebase: no configurado — los cambios se guardan solo en este navegador';
+        fbStatus.textContent = '🔴 Firebase: no configurado — modo local';
         return;
     }
     try {
@@ -406,22 +408,32 @@ function initFirebase() {
         db = firebase.database();
         FIREBASE_ON = true;
         fbStatus.style.color = '#2ecc71';
-        fbStatus.textContent = '🟢 Firebase conectado — colaboración en tiempo real activa';
+        fbStatus.textContent = '🟢 Firebase conectado — sincronización activa';
 
-        // Escuchar cambios en tiempo real (de otros usuarios)
+        // Escuchar cambios y CREAR etiquetas si no existen
         db.ref('etiquetas').on('value', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            document.querySelectorAll('.label').forEach(label => {
-                const key = label.dataset.lskey;
-                if (!key || ignorarFirebase.has(key)) return;
-                if (data[key]) aplicarEstado(label, data[key], false);
+
+            Object.keys(data).forEach(key => {
+                let label = document.querySelector(`[data-lskey="${key}"]`);
+                
+                if (!label) {
+                    // Si la etiqueta no existe en la pantalla de mi compañero, la creamos
+                    renderEtiquetaDesdeNube(key, data[key], container);
+                } else {
+                    // Si ya existe, solo actualizamos el contenido
+                    if (!ignorarFirebase.has(key)) {
+                        aplicarEstado(label, data[key], true);
+                    }
+                }
             });
             actualizarContador();
+            ajustarTextos();
         });
     } catch(e) {
         fbStatus.style.color = '#e74c3c';
-        fbStatus.textContent = '🔴 Firebase: error de conexión — modo local activo';
+        fbStatus.textContent = '🔴 Firebase: error de conexión';
         console.error('Firebase error:', e);
     }
 }
@@ -649,7 +661,7 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
                 <span contenteditable="false" spellcheck="false">PARTIDA: ${partida}</span>
                 <span contenteditable="false" spellcheck="false">No. CONS: ${cons}</span>
             </div>
-            <div class="subtitle"    contenteditable="false" spellcheck="false">  ${prenda}</div>
+            <div class="subtitle"    contenteditable="false" spellcheck="false"> : ${prenda}</div>
             <div class="description" contenteditable="false" spellcheck="false">
                 <strong>Características Técnicas:</strong><br><br>${descripcion}
             </div>
@@ -663,6 +675,7 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
     restaurarDesdeLocal(div);
 
     container.appendChild(div);
+guardarEstado(div);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -814,6 +827,33 @@ function aplicarSize(el, pt) {
 //  INICIO
 // ═══════════════════════════════════════════════════════════════
 initFirebase();
+function renderEtiquetaDesdeNube(key, estado, container) {
+    const div = document.createElement('div');
+    div.className = 'label';
+    div.dataset.lskey = key;
+
+    div.innerHTML = `
+        <div class="sello-validado">✔ VALIDADA</div>
+        <div class="label-toolbar">
+            <span class="toolbar-hint">Sincronizado desde Nube</span>
+            <button class="btn-validar"  onclick="toggleValidar(this)">☐ Validar</button>
+            <button class="btn-editar"   onclick="toggleEditar(this)">✏️ Editar</button>
+            <button class="btn-eliminar" onclick="eliminarEtiqueta(this)">🗑️ Eliminar</button>
+        </div>
+        <div class="label-body">
+            <div class="header">
+                <span contenteditable="false" spellcheck="false">${estado.header1}</span>
+                <span contenteditable="false" spellcheck="false">${estado.header2}</span>
+            </div>
+            <div class="subtitle"    contenteditable="false" spellcheck="false">${estado.subtitle}</div>
+            <div class="description" contenteditable="false" spellcheck="false">${estado.description}</div>
+            <div class="footer-info" contenteditable="false" spellcheck="false">${estado.footer}</div>
+        </div>
+    `;
+    
+    aplicarEstado(div, estado, true);
+    container.appendChild(div);
+}
 </script>
 </body>
 </html>
