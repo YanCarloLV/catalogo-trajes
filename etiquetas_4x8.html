@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>Extractor DOCX a Etiquetas - 4x8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+
+    <!-- ══ FIREBASE SDK ══════════════════════════════════════════ -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
     <style>
         @page { size: 100mm 201mm; margin: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f4f4f9; }
@@ -48,9 +53,17 @@
             transition: background .2s;
         }
         .btn:hover { background: #0aa09a; }
-        .btn-print { background: #f39c12; }
-        .btn-print:hover { background: #d68910; }
+        .btn-print  { background: #f39c12; }
+        .btn-print:hover  { background: #d68910; }
+        .btn-nueva  { background: #8e44ad; }
+        .btn-nueva:hover  { background: #7d3c98; }
         #status { margin-top: 10px; font-size: 13px; font-weight: bold; color: #0fb9b1; min-height: 18px; }
+        #fb-status {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            min-height: 16px;
+        }
 
         /* ── SEPARADOR DE PARTIDA (solo pantalla) ───────────── */
         .partida-sep {
@@ -88,6 +101,7 @@
             border: 1px solid #d1d8e0;
             page-break-after: always;
             overflow: visible;
+            position: relative;
         }
 
         /* ── BARRA DE HERRAMIENTAS POR ETIQUETA ─────────────── */
@@ -166,7 +180,6 @@
             border-radius: 4px;
             letter-spacing: 2px;
             flex-shrink: 0;
-            /* Forzar que el fondo negro se imprima en PDF y papel */
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -205,26 +218,15 @@
         .btn-validar:hover { background: #eafaf1; }
 
         /* Estado: etiqueta validada */
-        .label.validada {
-            border: 2.5px solid #27ae60 !important;
-        }
-        .label.validada .label-toolbar {
-            background: #eafaf1;
-            border-bottom-color: #27ae60;
-        }
-        .label.validada .btn-validar {
-            background: #27ae60;
-            color: white;
-        }
-        .label.validada .label-body {
-            opacity: 1;
-        }
-        /* Sello visual de VALIDADO sobre la etiqueta */
+        .label.validada { border: 2.5px solid #27ae60 !important; }
+        .label.validada .label-toolbar { background: #eafaf1; border-bottom-color: #27ae60; }
+        .label.validada .btn-validar   { background: #27ae60; color: white; }
+
+        /* Sello visual de VALIDADO */
         .sello-validado {
             display: none;
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-20deg);
             font-size: 28pt;
             font-weight: 900;
@@ -240,13 +242,11 @@
             print-color-adjust: exact;
         }
         .label.validada .sello-validado { display: block; }
-        .label { position: relative; }
 
-        /* Contador flotante de validadas */
+        /* Contador flotante */
         #contador-validadas {
             position: fixed;
-            bottom: 18px;
-            right: 18px;
+            bottom: 18px; right: 18px;
             background: #1e272e;
             color: white;
             border-radius: 12px;
@@ -259,13 +259,8 @@
             gap: 8px;
             align-items: center;
         }
-        #contador-validadas span.num { color: #0fb9b1; font-size: 15pt; }
-        #contador-validadas span.total { color: #aaa; font-size: 10pt; }
-
-        @media print {
-            #contador-validadas { display: none !important; }
-            .sello-validado { display: none !important; }
-        }
+        #contador-validadas span.num   { color: #0fb9b1; font-size: 15pt; }
+        #contador-validadas span.total { color: #aaa;    font-size: 10pt; }
 
         /* ── MODO EDICIÓN ───────────────────────────────────── */
         .editando .label-toolbar { background: #fff8e1; border-bottom-color: #f39c12; }
@@ -279,50 +274,226 @@
             outline: 2px solid #f39c12;
             background: rgba(255, 248, 200, 0.4);
         }
-        .editando .subtitle[contenteditable="true"]:focus {
-            background: #1a1a1a;
+        .editando .subtitle[contenteditable="true"]:focus { background: #1a1a1a; }
+
+        /* ── MODAL NUEVA ETIQUETA ────────────────────────────── */
+        #modal-nueva {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+        #modal-nueva.visible { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: 10px;
+            padding: 24px 28px;
+            width: 420px;
+            max-width: 95vw;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .modal-box h3 { margin: 0 0 18px; color: #1e272e; font-size: 14pt; }
+        .modal-box label { display: block; font-size: 11px; font-weight: bold; color: #555; margin-bottom: 3px; margin-top: 12px; }
+        .modal-box input,
+        .modal-box textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .modal-box textarea { height: 110px; resize: vertical; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+        .modal-actions .btn-cancel {
+            padding: 9px 20px; border: 1px solid #ccc; background: white;
+            border-radius: 5px; cursor: pointer; font-weight: bold; color: #666;
+        }
+        .modal-actions .btn-ok {
+            padding: 9px 20px; background: #8e44ad; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
 
         /* ── IMPRESIÓN ──────────────────────────────────────── */
         @media print {
-            /* Forzar impresión de fondos en TODOS los elementos */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .topbar        { display: none !important; }
             .partida-sep   { display: none !important; }
             .label-toolbar { display: none !important; }
-            /* Solo quitar outline de edición — NO tocar background */
-            [contenteditable] { outline: none !important; }
-            .label {
-                margin: 0 !important;
-                border: none !important;
-                overflow: hidden !important;
-            }
-            body { background: white !important; }
+            #contador-validadas { display: none !important; }
+            .sello-validado     { display: none !important; }
+            #modal-nueva        { display: none !important; }
+            [contenteditable]   { outline: none !important; }
+            .label { margin: 0 !important; border: none !important; overflow: hidden !important; }
+            body   { background: white !important; }
         }
     </style>
 </head>
 <body>
 
+<!-- ══ TOPBAR ══════════════════════════════════════════════════ -->
 <div class="topbar">
     <h2>📦 Extractor de Etiquetas — Word → 4×6</h2>
     <div class="controls">
         <input type="file" id="docx-upload" accept=".docx">
-        <button class="btn" onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
-        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn"       onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
+        <button class="btn btn-nueva"  onclick="abrirModalNueva()">➕ Nueva Etiqueta</button>
+        <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
     <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
+    <div id="fb-status">🔴 Firebase: no configurado — usando modo local</div>
 </div>
 
+<!-- ══ CONTADOR FLOTANTE ════════════════════════════════════════ -->
 <div id="contador-validadas">
     ✅ <span class="num" id="cnt-val">0</span>&nbsp;<span class="total" id="cnt-tot">/ 0 validadas</span>
+</div>
+
+<!-- ══ MODAL NUEVA ETIQUETA ════════════════════════════════════ -->
+<div id="modal-nueva">
+    <div class="modal-box">
+        <h3>➕ Nueva Etiqueta Manual</h3>
+        <label>Número de Partida</label>
+        <input id="m-partida"  type="text" placeholder="Ej: 7">
+        <label>No. Consecutivo (CONS)</label>
+        <input id="m-cons"     type="text" placeholder="Ej: 4">
+        <label>Pieza / Prenda</label>
+        <input id="m-prenda"   type="text" placeholder="Ej: CAMISA">
+        <label>Descripción / Características Técnicas</label>
+        <textarea id="m-desc"  placeholder="Escribe aquí la descripción de la pieza..."></textarea>
+        <label>Área (pie de página)</label>
+        <input id="m-area"     type="text" value="DIRECCIÓN GENERAL DE RECURSOS HUMANOS (CONSOLIDADO)">
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="cerrarModalNueva()">Cancelar</button>
+            <button class="btn-ok"     onclick="confirmarNueva()">✅ Crear Etiqueta</button>
+        </div>
+    </div>
 </div>
 
 <div id="labels-container"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+//  🔥 CONFIGURACIÓN FIREBASE
+// ═══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAo8hdlRmmLq2RW0sGHUGVwCVURnZlJFpI",
+    authDomain: "extractor-etiquetas.firebaseapp.com",
+    databaseURL: "https://extractor-etiquetas-default-rtdb.firebaseio.com",
+    projectId: "extractor-etiquetas",
+    storageBucket: "extractor-etiquetas.firebasestorage.app",
+    messagingSenderId: "920447224129",
+    appId: "1:920447224129:web:91851372b731415fa3b9c0"
+};
+
+let db              = null;
+let FIREBASE_ON     = false;
+let ignorarFirebase = new Set(); // keys que estamos editando localmente
+
+function initFirebase() {
+    const fbStatus = document.getElementById('fb-status');
+    if (FIREBASE_CONFIG.apiKey === "TU_API_KEY") {
+        fbStatus.style.color = '#e74c3c';
+        fbStatus.textContent = '🔴 Firebase: no configurado — los cambios se guardan solo en este navegador';
+        return;
+    }
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        FIREBASE_ON = true;
+        fbStatus.style.color = '#2ecc71';
+        fbStatus.textContent = '🟢 Firebase conectado — colaboración en tiempo real activa';
+
+        // Escuchar cambios en tiempo real (de otros usuarios)
+        db.ref('etiquetas').on('value', snapshot => {
+            const data = snapshot.val();
+            if (!data) return;
+            document.querySelectorAll('.label').forEach(label => {
+                const key = label.dataset.lskey;
+                if (!key || ignorarFirebase.has(key)) return;
+                if (data[key]) aplicarEstado(label, data[key], false);
+            });
+            actualizarContador();
+        });
+    } catch(e) {
+        fbStatus.style.color = '#e74c3c';
+        fbStatus.textContent = '🔴 Firebase: error de conexión — modo local activo';
+        console.error('Firebase error:', e);
+    }
+}
+
+// ── Sanitizar key para Firebase (no acepta . # $ [ ] /) ───────
+function sanKey(str) {
+    return str.replace(/[.#$[\]/]/g, '_');
+}
+
+// ── Obtener estado completo de una etiqueta ────────────────────
+function obtenerEstado(label) {
+    return {
+        validada:    label.classList.contains('validada'),
+        header1:     label.querySelector('.header span:first-child')?.innerHTML  || '',
+        header2:     label.querySelector('.header span:last-child')?.innerHTML   || '',
+        subtitle:    label.querySelector('.subtitle')?.innerHTML                 || '',
+        description: label.querySelector('.description')?.innerHTML              || '',
+        footer:      label.querySelector('.footer-info')?.innerHTML              || '',
+        ts:          Date.now()
+    };
+}
+
+// ── Aplicar estado guardado a una etiqueta ─────────────────────
+function aplicarEstado(label, estado, restaurarTextos = true) {
+    // Validación
+    const btnVal = label.querySelector('.btn-validar');
+    if (estado.validada) {
+        label.classList.add('validada');
+        if (btnVal) btnVal.textContent = '☑ Validada';
+    } else {
+        label.classList.remove('validada');
+        if (btnVal) btnVal.textContent = '☐ Validar';
+    }
+
+    // Textos (solo si se pide y hay algo guardado)
+    if (restaurarTextos) {
+        const h1   = label.querySelector('.header span:first-child');
+        const h2   = label.querySelector('.header span:last-child');
+        const sub  = label.querySelector('.subtitle');
+        const desc = label.querySelector('.description');
+        const foot = label.querySelector('.footer-info');
+        if (h1   && estado.header1)     h1.innerHTML   = estado.header1;
+        if (h2   && estado.header2)     h2.innerHTML   = estado.header2;
+        if (sub  && estado.subtitle)    sub.innerHTML  = estado.subtitle;
+        if (desc && estado.description) desc.innerHTML = estado.description;
+        if (foot && estado.footer)      foot.innerHTML = estado.footer;
+    }
+}
+
+// ── Guardar estado (localStorage + Firebase si está activo) ────
+function guardarEstado(label) {
+    const key = label.dataset.lskey;
+    if (!key) return;
+    const estado = obtenerEstado(label);
+    localStorage.setItem(key, JSON.stringify(estado));
+    if (FIREBASE_ON && db) {
+        ignorarFirebase.add(key);
+        db.ref(`etiquetas/${sanKey(key)}`).set(estado).then(() => {
+            setTimeout(() => ignorarFirebase.delete(key), 1500);
+        });
+    }
+}
+
+// ── Restaurar estado desde localStorage (fallback sin Firebase) ─
+function restaurarDesdeLocal(label) {
+    const key = label.dataset.lskey;
+    if (!key) return;
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    try { aplicarEstado(label, JSON.parse(raw), true); } catch(e) {}
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  CARGA Y CONVERSIÓN DEL DOCX
 // ═══════════════════════════════════════════════════════════════
@@ -374,7 +545,6 @@ function extraerDatos(htmlDiv, container, status) {
     ];
     const regexPrendas = new RegExp("(" + PRENDAS.join("|") + ")", "gi");
 
-    // Intenta leer número y área de un texto que contenga "PARTIDA X"
     function trySetPartida(texto) {
         const m = texto.match(/PARTIDA\s+(\d+)\.?\s*(.*)/i);
         if (!m) return false;
@@ -383,7 +553,6 @@ function extraerDatos(htmlDiv, container, status) {
         return true;
     }
 
-    // Inserta separador visual si la partida cambió desde el último separador
     function sepSiCambia() {
         if (currentPartida === lastSepPartida) return;
         lastSepPartida = currentPartida;
@@ -394,14 +563,10 @@ function extraerDatos(htmlDiv, container, status) {
     }
 
     Array.from(htmlDiv.children).forEach(el => {
-
-        // ── Párrafos y encabezados FUERA de tablas ────────────
         if (el.tagName === 'P' || /^H\d$/.test(el.tagName)) {
             trySetPartida(el.textContent.trim());
             return;
         }
-
-        // ── Tablas ────────────────────────────────────────────
         if (el.tagName !== 'TABLE') return;
 
         el.querySelectorAll('tr').forEach(row => {
@@ -411,25 +576,18 @@ function extraerDatos(htmlDiv, container, status) {
             const primerTexto = cells[0].textContent.trim();
             const esNumCons   = /^[0-9]+(\.[0-9]+)?$/.test(primerTexto);
 
-            // ── Fila NO numérica: puede ser encabezado de partida ─
             if (!esNumCons) {
-                // Buscar "PARTIDA X" en cualquier celda de esta fila
-                // (cubre filas fusionadas que abarcan toda la tabla)
                 const textoFila = row.textContent.trim();
-                if (textoFila.toUpperCase().includes('PARTIDA')) {
-                    trySetPartida(textoFila);
-                }
-                return; // No es fila de artículo → saltar
+                if (textoFila.toUpperCase().includes('PARTIDA')) trySetPartida(textoFila);
+                return;
             }
 
-            // ── Fila de artículo ──────────────────────────────
             if (cells.length < 2) return;
 
-            const parrs    = Array.from(cells[1].querySelectorAll('p'))
-                                  .map(p => p.textContent.trim()).filter(Boolean);
-            let fullText   = parrs.length ? parrs.join(" \n ") : cells[1].textContent.trim();
+            const parrs  = Array.from(cells[1].querySelectorAll('p'))
+                               .map(p => p.textContent.trim()).filter(Boolean);
+            let fullText = parrs.length ? parrs.join(" \n ") : cells[1].textContent.trim();
 
-            // Omitir filas vacías → evita etiquetas en blanco
             if (!fullText || fullText.trim().length < 5) return;
 
             const frags  = fullText.split(regexPrendas);
@@ -469,13 +627,12 @@ function extraerDatos(htmlDiv, container, status) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  CREAR ETIQUETA (barra de herramientas + cuerpo editable)
+//  CREAR ETIQUETA
 // ═══════════════════════════════════════════════════════════════
 function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
-    const div = document.createElement('div');
+    const div    = document.createElement('div');
     div.className = 'label';
 
-    // Clave única para localStorage: combinación partida + consecutivo + prenda
     const lsKey = `val_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}`;
     div.dataset.lskey = lsKey;
 
@@ -483,7 +640,7 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
         <div class="sello-validado">✔ VALIDADA</div>
         <div class="label-toolbar">
             <span class="toolbar-hint">Partida ${partida} · CONS ${cons}</span>
-            <button class="btn-validar"  onclick="toggleValidar(this)" title="Marcar como validada">☐ Validar</button>
+            <button class="btn-validar"  onclick="toggleValidar(this)">☐ Validar</button>
             <button class="btn-editar"   onclick="toggleEditar(this)">✏️ Editar</button>
             <button class="btn-eliminar" onclick="eliminarEtiqueta(this)">🗑️ Eliminar</button>
         </div>
@@ -492,61 +649,142 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
                 <span contenteditable="false" spellcheck="false">PARTIDA: ${partida}</span>
                 <span contenteditable="false" spellcheck="false">No. CONS: ${cons}</span>
             </div>
-            <div class="subtitle"     contenteditable="false" spellcheck="false">PIEZA: ${prenda}</div>
-            <div class="description"  contenteditable="false" spellcheck="false">
+            <div class="subtitle"    contenteditable="false" spellcheck="false">PIEZA: ${prenda}</div>
+            <div class="description" contenteditable="false" spellcheck="false">
                 <strong>Características Técnicas:</strong><br><br>${descripcion}
             </div>
-            <div class="footer-info"  contenteditable="false" spellcheck="false">
-                ${area}<br>
+            <div class="footer-info" contenteditable="false" spellcheck="false">
+                ${area}<br>LPN/26/2025 - CONTROL DE ALMACÉN
             </div>
         </div>
     `;
 
-    // Restaurar estado de validación desde localStorage
-    if (localStorage.getItem(lsKey) === '1') {
-        div.classList.add('validada');
-        div.querySelector('.btn-validar').textContent = '☑ Validada';
-    }
+    // Restaurar estado guardado (localStorage como fallback)
+    restaurarDesdeLocal(div);
 
     container.appendChild(div);
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  EDICIÓN — activa / desactiva campos editables
+//  VALIDACIÓN
+// ═══════════════════════════════════════════════════════════════
+function toggleValidar(btn) {
+    const label   = btn.closest('.label');
+    const validada = label.classList.toggle('validada');
+    btn.textContent = validada ? '☑ Validada' : '☐ Validar';
+    guardarEstado(label);
+    actualizarContador();
+}
+
+function actualizarContador() {
+    const todas     = document.querySelectorAll('.label');
+    const validadas = document.querySelectorAll('.label.validada');
+    const contador  = document.getElementById('contador-validadas');
+    if (!todas.length) { contador.style.display = 'none'; return; }
+    document.getElementById('cnt-val').textContent = validadas.length;
+    document.getElementById('cnt-tot').textContent = `/ ${todas.length} validadas`;
+    contador.style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EDICIÓN — activa / desactiva campos + guarda al terminar
 // ═══════════════════════════════════════════════════════════════
 function toggleEditar(btn) {
     const label    = btn.closest('.label');
+    const key      = label.dataset.lskey;
     const editando = label.classList.toggle('editando');
+
     label.querySelectorAll('[contenteditable]')
          .forEach(c => c.setAttribute('contenteditable', editando ? 'true' : 'false'));
 
     btn.textContent = editando ? '✅ Listo' : '✏️ Editar';
 
-    if (!editando) {
-        // Reajustar texto por si el usuario cambió el contenido
+    if (editando) {
+        // Marcar que este label está siendo editado localmente → ignorar Firebase
+        if (key) ignorarFirebase.add(key);
+    } else {
+        // Al terminar de editar: guardar + reajustar tipografía
         requestAnimationFrame(() => {
             const desc = label.querySelector('.description');
             if (desc) ajustarUnTexto(desc);
         });
+        guardarEstado(label);
+        if (key) setTimeout(() => ignorarFirebase.delete(key), 2000);
     }
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  ELIMINAR — borra la etiqueta y el separador si queda vacío
+//  ELIMINAR
 // ═══════════════════════════════════════════════════════════════
 function eliminarEtiqueta(btn) {
     const label    = btn.closest('.label');
+    const key      = label.dataset.lskey;
     const anterior = label.previousElementSibling;
+
+    // Limpiar de localStorage y Firebase
+    if (key) {
+        localStorage.removeItem(key);
+        if (FIREBASE_ON && db) db.ref(`etiquetas/${sanKey(key)}`).remove();
+    }
+
     label.remove();
 
-    // Si el separador anterior se quedó sin etiquetas, quitarlo también
     if (anterior && anterior.classList.contains('partida-sep')) {
         const siguiente = anterior.nextElementSibling;
-        if (!siguiente || siguiente.classList.contains('partida-sep') || !siguiente) {
+        if (!siguiente || siguiente.classList.contains('partida-sep')) {
             anterior.remove();
         }
     }
+    actualizarContador();
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  NUEVA ETIQUETA MANUAL
+// ═══════════════════════════════════════════════════════════════
+function abrirModalNueva() {
+    document.getElementById('modal-nueva').classList.add('visible');
+    document.getElementById('m-partida').focus();
+}
+
+function cerrarModalNueva() {
+    document.getElementById('modal-nueva').classList.remove('visible');
+}
+
+function confirmarNueva() {
+    const partida = document.getElementById('m-partida').value.trim() || '?';
+    const cons    = document.getElementById('m-cons').value.trim()    || '?';
+    const prenda  = document.getElementById('m-prenda').value.trim()  || 'ARTÍCULO';
+    const desc    = document.getElementById('m-desc').value.trim()    || '(sin descripción)';
+    const area    = document.getElementById('m-area').value.trim()    || 'ALMACÉN';
+
+    const container = document.getElementById('labels-container');
+
+    // Insertar separador si es nueva partida
+    const ultSep = [...container.querySelectorAll('.partida-sep-label')].pop();
+    const partActual = ultSep ? ultSep.textContent.match(/Partida (\S+)/)?.[1] : null;
+    if (partActual !== partida) {
+        const sep = document.createElement('div');
+        sep.className = 'partida-sep';
+        sep.innerHTML = `<span class="partida-sep-label">▶ Partida ${partida} — ${area}</span>`;
+        container.appendChild(sep);
+    }
+
+    crearEtiqueta(partida, cons, prenda, desc, area, container);
+
+    // Limpiar modal
+    ['m-partida','m-cons','m-prenda','m-desc'].forEach(id => document.getElementById(id).value = '');
+    cerrarModalNueva();
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        ajustarTextos();
+        actualizarContador();
+    }));
+}
+
+// Cerrar modal con Escape
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cerrarModalNueva();
+});
 
 // ═══════════════════════════════════════════════════════════════
 //  AUTO-FIT TIPOGRAFÍA
@@ -567,42 +805,15 @@ function ajustarUnTexto(desc) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  VALIDACIÓN — palomita con persistencia en localStorage
-// ═══════════════════════════════════════════════════════════════
-function toggleValidar(btn) {
-    const label    = btn.closest('.label');
-    const lsKey    = label.dataset.lskey;
-    const validada = label.classList.toggle('validada');
-
-    btn.textContent = validada ? '☑ Validada' : '☐ Validar';
-
-    // Guardar o borrar en localStorage
-    if (validada) {
-        localStorage.setItem(lsKey, '1');
-    } else {
-        localStorage.removeItem(lsKey);
-    }
-
-    actualizarContador();
-}
-
-function actualizarContador() {
-    const todas     = document.querySelectorAll('.label');
-    const validadas = document.querySelectorAll('.label.validada');
-    const contador  = document.getElementById('contador-validadas');
-
-    if (!todas.length) { contador.style.display = 'none'; return; }
-
-    document.getElementById('cnt-val').textContent  = validadas.length;
-    document.getElementById('cnt-tot').textContent  = `/ ${todas.length} validadas`;
-    contador.style.display = 'flex';
-}
-
 function aplicarSize(el, pt) {
     el.style.fontSize   = pt + 'pt';
     el.style.lineHeight = pt < 7 ? '1.15' : '1.3';
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  INICIO
+// ═══════════════════════════════════════════════════════════════
+initFirebase();
 </script>
 </body>
 </html>
