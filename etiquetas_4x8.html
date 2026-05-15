@@ -57,6 +57,8 @@
         .btn-print:hover  { background: #d68910; }
         .btn-nueva  { background: #8e44ad; }
         .btn-nueva:hover  { background: #7d3c98; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
         #status { margin-top: 10px; font-size: 13px; font-weight: bold; color: #0fb9b1; min-height: 18px; }
         #fb-status {
             margin-top: 6px;
@@ -342,7 +344,8 @@
         <input type="file" id="docx-upload" accept=".docx">
         <button class="btn"       onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
         <button class="btn btn-nueva"  onclick="abrirModalNueva()">➕ Nueva Etiqueta</button>
-        <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
+<button class="btn btn-danger" onclick="limpiarBaseDeDatos()">🗑️ Limpiar BD</button>
     </div>
     <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
     <div id="fb-status">🔴 Firebase: no configurado — usando modo local</div>
@@ -411,9 +414,14 @@ function initFirebase() {
         fbStatus.textContent = '🟢 Firebase conectado — sincronización activa';
 
         // Escuchar cambios y CREAR etiquetas si no existen
-        db.ref('etiquetas').on('value', snapshot => {
-            const data = snapshot.val();
-            if (!data) return;
+        db.ref('etiquetas').on('value', snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+                // Si alguien borra la base de datos, limpiamos la pantalla de todos
+                document.getElementById('labels-container').innerHTML = '';
+                actualizarContador();
+                return;
+            }
 
             Object.keys(data).forEach(key => {
                 let label = document.querySelector(`[data-lskey="${key}"]`);
@@ -642,11 +650,13 @@ function extraerDatos(htmlDiv, container, status) {
 //  CREAR ETIQUETA
 // ═══════════════════════════════════════════════════════════════
 function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
-    const div    = document.createElement('div');
-    div.className = 'label';
+    const div    = document.createElement('div');
+    div.className = 'label';
 
-    const lsKey = `val_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}`;
-    div.dataset.lskey = lsKey;
+    // Agregamos un sufijo único de 6 caracteres para evitar que Firebase sobreescriba duplicados
+    const sufijoUnico = Math.random().toString(36).substr(2, 6);
+    const lsKey = `val_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}_${sufijoUnico}`;
+    div.dataset.lskey = lsKey;
 
     div.innerHTML = `
         <div class="sello-validado">✔ VALIDADA</div>
@@ -661,12 +671,12 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
                 <span contenteditable="false" spellcheck="false">PARTIDA: ${partida}</span>
                 <span contenteditable="false" spellcheck="false">No. CONS: ${cons}</span>
             </div>
-            <div class="subtitle"    contenteditable="false" spellcheck="false"> : ${prenda}</div>
+            <div class="subtitle"    contenteditable="false" spellcheck="false">PIEZA: ${prenda}</div>
             <div class="description" contenteditable="false" spellcheck="false">
                 <strong>Características Técnicas:</strong><br><br>${descripcion}
             </div>
             <div class="footer-info" contenteditable="false" spellcheck="false">
-                ${area}<br>LPN/26/2025 - CONTROL DE ALMACÉN
+                ${area}<br>
             </div>
         </div>
     `;
@@ -853,6 +863,19 @@ function renderEtiquetaDesdeNube(key, estado, container) {
     
     aplicarEstado(div, estado, true);
     container.appendChild(div);
+}
+// ═══════════════════════════════════════════════════════════════
+//  LIMPIAR BASE DE DATOS
+// ═══════════════════════════════════════════════════════════════
+function limpiarBaseDeDatos() {
+    const seguro = confirm("⚠️ ¿Estás seguro de borrar TODAS las etiquetas de la nube?\n\nEsto vaciará la pantalla tuya y la de todos tus compañeros. No se puede deshacer.");
+    if (seguro) {
+        if (FIREBASE_ON && db) {
+            db.ref('etiquetas').remove(); // Borra todo en Firebase
+        }
+        localStorage.clear(); // Limpia la memoria caché de tu computadora
+        document.getElementById('status').innerText = "✅ Base de datos vaciada. Listo para cargar un nuevo archivo.";
+    }
 }
 </script>
 </body>
