@@ -5,7 +5,6 @@
     <title>Extractor DOCX a Etiquetas - 4x8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 
-    <!-- ══ FIREBASE SDK ══════════════════════════════════════════ -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
@@ -58,7 +57,7 @@
         .btn-nueva  { background: #8e44ad; }
         .btn-nueva:hover  { background: #7d3c98; }
         .btn-danger { background: #e74c3c; }
-        .btn-danger:hover { background: #c0392b; }
+        .btn-danger:hover { background: #c0392b; }
         #status { margin-top: 10px; font-size: 13px; font-weight: bold; color: #0fb9b1; min-height: 18px; }
         #fb-status {
             margin-top: 6px;
@@ -337,26 +336,23 @@
 </head>
 <body>
 
-<!-- ══ TOPBAR ══════════════════════════════════════════════════ -->
 <div class="topbar">
     <h2>📦 Extractor de Etiquetas — Word → 4×6</h2>
     <div class="controls">
         <input type="file" id="docx-upload" accept=".docx">
-        <button class="btn"       onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
+        <button class="btn"        onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
         <button class="btn btn-nueva"  onclick="abrirModalNueva()">➕ Nueva Etiqueta</button>
-        <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
-<button class="btn btn-danger" onclick="limpiarBaseDeDatos()">🗑️ Limpiar BD</button>
+        <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn btn-danger" onclick="limpiarBaseDeDatos()">🗑️ Limpiar BD</button>
     </div>
     <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
     <div id="fb-status">🔴 Firebase: no configurado — usando modo local</div>
 </div>
 
-<!-- ══ CONTADOR FLOTANTE ════════════════════════════════════════ -->
 <div id="contador-validadas">
     ✅ <span class="num" id="cnt-val">0</span>&nbsp;<span class="total" id="cnt-tot">/ 0 validadas</span>
 </div>
 
-<!-- ══ MODAL NUEVA ETIQUETA ════════════════════════════════════ -->
 <div id="modal-nueva">
     <div class="modal-box">
         <h3>➕ Nueva Etiqueta Manual</h3>
@@ -364,7 +360,7 @@
         <input id="m-partida"  type="text" placeholder="Ej: 7">
         <label>No. Consecutivo (CONS)</label>
         <input id="m-cons"     type="text" placeholder="Ej: 4">
-        <label> / Prenda</label>
+        <label>Pieza / Prenda</label>
         <input id="m-prenda"   type="text" placeholder="Ej: CAMISA">
         <label>Descripción / Características Técnicas</label>
         <textarea id="m-desc"  placeholder="Escribe aquí la descripción de la pieza..."></textarea>
@@ -414,26 +410,44 @@ function initFirebase() {
         fbStatus.textContent = '🟢 Firebase conectado — sincronización activa';
 
         // Escuchar cambios y CREAR etiquetas si no existen
-        db.ref('etiquetas').on('value', snapshot => {
-            const data = snapshot.val();
-            if (!data) {
-                // Si alguien borra la base de datos, limpiamos la pantalla de todos
-                document.getElementById('labels-container').innerHTML = '';
-                actualizarContador();
-                return;
-            }
+        db.ref('etiquetas').on('value', snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+                // Si alguien borra la base de datos, limpiamos la pantalla de todos
+                document.getElementById('labels-container').innerHTML = '';
+                actualizarContador();
+                return;
+            }
 
-            Object.keys(data).forEach(key => {
+            let lastPartida = null;
+
+            // Al usar .sort(), Firebase respetará el orden 0001, 0002 que le dimos
+            Object.keys(data).sort().forEach(key => {
                 let label = document.querySelector(`[data-lskey="${key}"]`);
                 
                 if (!label) {
-                    // Si la etiqueta no existe en la pantalla de mi compañero, la creamos
+                    // RECREAR SEPARADORES AL DAR F5
+                    const match = key.match(/_P([^_]+)_/);
+                    const partida = match ? match[1] : '?';
+                    
+                    if (partida !== lastPartida) {
+                        lastPartida = partida;
+                        const sep = document.createElement('div');
+                        sep.className = 'partida-sep';
+                        const areaText = data[key].footer ? data[key].footer.split('<br>')[0].trim() : 'ALMACÉN';
+                        sep.innerHTML = `<span class="partida-sep-label">▶ Partida ${partida} — ${areaText}</span>`;
+                        container.appendChild(sep);
+                    }
+
                     renderEtiquetaDesdeNube(key, data[key], container);
                 } else {
                     // Si ya existe, solo actualizamos el contenido
                     if (!ignorarFirebase.has(key)) {
                         aplicarEstado(label, data[key], true);
                     }
+                    // Mantener el rastro de la última partida vista
+                    const match = key.match(/_P([^_]+)_/);
+                    if (match) lastPartida = match[1];
                 }
             });
             actualizarContador();
@@ -650,13 +664,16 @@ function extraerDatos(htmlDiv, container, status) {
 //  CREAR ETIQUETA
 // ═══════════════════════════════════════════════════════════════
 function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
-    const div    = document.createElement('div');
-    div.className = 'label';
+    const div    = document.createElement('div');
+    div.className = 'label';
 
-    // Agregamos un sufijo único de 6 caracteres para evitar que Firebase sobreescriba duplicados
-    const sufijoUnico = Math.random().toString(36).substr(2, 6);
-    const lsKey = `val_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}_${sufijoUnico}`;
-    div.dataset.lskey = lsKey;
+    // ORDEN EXACTO: Forzamos a Firebase a respetar la posición original (0001, 0002...)
+    const ordenNum = document.querySelectorAll('.label').length + 1;
+    const ordenStr = String(ordenNum).padStart(4, '0');
+    const sufijoUnico = Math.random().toString(36).substr(2, 4);
+    
+    const lsKey = `val_${ordenStr}_P${partida}_C${cons}_${prenda.replace(/\s+/g,'_')}_${sufijoUnico}`;
+    div.dataset.lskey = lsKey;
 
     div.innerHTML = `
         <div class="sello-validado">✔ VALIDADA</div>
@@ -671,7 +688,7 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
                 <span contenteditable="false" spellcheck="false">PARTIDA: ${partida}</span>
                 <span contenteditable="false" spellcheck="false">No. CONS: ${cons}</span>
             </div>
-            <div class="subtitle"    contenteditable="false" spellcheck="false"> ${prenda}</div>
+            <div class="subtitle"    contenteditable="false" spellcheck="false"> ${prenda}</div>
             <div class="description" contenteditable="false" spellcheck="false">
                 <strong>Características Técnicas:</strong><br><br>${descripcion}
             </div>
@@ -685,7 +702,7 @@ function crearEtiqueta(partida, cons, prenda, descripcion, area, container) {
     restaurarDesdeLocal(div);
 
     container.appendChild(div);
-guardarEstado(div);
+    guardarEstado(div);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -834,9 +851,10 @@ function aplicarSize(el, pt) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  INICIO
+//  INICIO Y DIBUJO DESDE LA NUBE
 // ═══════════════════════════════════════════════════════════════
 initFirebase();
+
 function renderEtiquetaDesdeNube(key, estado, container) {
     const div = document.createElement('div');
     div.className = 'label';
@@ -864,6 +882,7 @@ function renderEtiquetaDesdeNube(key, estado, container) {
     aplicarEstado(div, estado, true);
     container.appendChild(div);
 }
+
 // ═══════════════════════════════════════════════════════════════
 //  LIMPIAR BASE DE DATOS
 // ═══════════════════════════════════════════════════════════════
