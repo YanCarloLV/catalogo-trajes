@@ -90,7 +90,7 @@
             text-transform: uppercase;
         }
 
-/* ── ETIQUETA 100×201 mm ────────────────────────────── */
+        /* ── ETIQUETA 100×201 mm ────────────────────────────── */
         .label {
             width: 100mm;
             height: 201mm;
@@ -339,10 +339,10 @@
     <h2>📦 Extractor de Etiquetas — Word → 4×6</h2>
     <div class="controls">
         <input type="file" id="docx-upload" accept=".docx">
-        <button class="btn"         onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
+        <button class="btn"        onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
         <button class="btn btn-nueva"  onclick="abrirModalNueva()">➕ Nueva Etiqueta</button>
         <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
-        <button class="btn" style="background:#3498db;" onclick="desmarcarTodas()">Desmarcar Todas</button>
+        <button class="btn" style="background:#3498db;" onclick="desmarcarTodas()">☐ Desmarcar Todas</button>
         <button class="btn btn-danger" onclick="limpiarBaseDeDatos()">🗑️ Limpiar BD</button>
     </div>
     <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
@@ -893,12 +893,13 @@ function desmarcarTodas() {
             label.classList.remove('validada');
             const btnVal = label.querySelector('.btn-validar');
             if (btnVal) btnVal.textContent = '☐ Validar';
-            guardarEstado(label); // Guarda el cambio en Firebase/Local
+            guardarEstado(label);
         });
         actualizarContador();
     }
 }
-    // ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
 //  LIMPIAR BASE DE DATOS
 // ═══════════════════════════════════════════════════════════════
 function limpiarBaseDeDatos() {
