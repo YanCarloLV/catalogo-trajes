@@ -716,6 +716,56 @@ body.is-mobile .demo-win .demo-bar { display: none !important; }
     -webkit-overflow-scrolling: touch !important; /* Scroll suave en iOS */
   }
 }
+/* --- AJUSTES DE MENÚ MÓVIL WMS (SEGURO) --- */
+.btn-mobile-menu { 
+  display: none; 
+}
+
+@media (max-width: 768px) {
+  .btn-mobile-menu {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--orange);
+    color: var(--navy);
+    font-weight: 800;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 15px rgba(245,136,31,0.3);
+    z-index: 9000;
+    cursor: pointer;
+  }
+
+  .wms-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 70vh !important;
+    background: rgba(10, 22, 40, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    border-top: 2px solid var(--orange) !important;
+    border-right: none !important;
+    z-index: 99999 !important;
+    transform: translateY(120%) !important;
+    transition: transform 0.4s cubic-bezier(0.3, 1, 0.32, 1) !important;
+    padding: 25px 20px !important;
+    box-shadow: 0 -15px 50px rgba(0,0,0,0.9) !important;
+    border-radius: 24px 24px 0 0 !important;
+    overflow-y: auto !important;
+  }
+
+  .wms-sidebar.mobile-active {
+    transform: translateY(0) !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -957,34 +1007,42 @@ body.is-mobile .demo-win .demo-bar { display: none !important; }
     </div>
     <!-- WMS DEMO -->
     <div class="demo-win" id="wms-demo-container">
-      <!-- ✏️ BARRA DE PERSONALIZACIÓN WMS -->
-      <div style="background:rgba(245,136,31,.07);border-bottom:1px solid rgba(245,136,31,.2);padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <span style="font-size:.72rem;font-weight:700;color:var(--orange);white-space:nowrap;">✏️ Personaliza el demo:</span>
-        <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:180px;">
-          <span style="font-size:.7rem;color:var(--muted);white-space:nowrap;">🏢 Empresa:</span>
-          <input type="text" id="wms-empresa-input" placeholder="Tu Empresa" maxlength="28"
-            style="flex:1;padding:5px 10px;background:#0a111e;border:1px solid rgba(245,136,31,.35);color:var(--white);border-radius:7px;font-size:.78rem;font-family:'DM Sans',sans-serif;outline:none;min-width:0;"
-            oninput="wmsActualizarEmpresa()" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='rgba(245,136,31,.35)'">
-        </div>
-        <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:160px;">
-          <span style="font-size:.7rem;color:var(--muted);white-space:nowrap;">👷 Operador:</span>
-          <input type="text" id="wms-operador-input" placeholder="Tu nombre" maxlength="24"
-            style="flex:1;padding:5px 10px;background:#0a111e;border:1px solid rgba(245,136,31,.35);color:var(--white);border-radius:7px;font-size:.78rem;font-family:'DM Sans',sans-serif;outline:none;min-width:0;"
-            oninput="wmsActualizarOperador()" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='rgba(245,136,31,.35)'">
-        </div>
-        <span style="font-size:.68rem;color:var(--muted);font-style:italic;white-space:nowrap;">→ Se refleja en el PDF</span>
+  
+  <div class="demo-bar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="demo-bar-title" id="wms-bar-title">Sistema WMS · Tu Empresa · Panel Almacén</span>
+    <div class="demo-bar-actions">
+      <button class="demo-btn" onclick="wmsAddEntry()">📥 Ingreso</button>
+      <button class="demo-btn" onclick="wmsDownloadExcel()">📊 Excel</button>
+    </div>
+  </div>
+
+  <div class="demo-body">
+    <div style="background:rgba(245,136,31,.07);border-bottom:1px solid rgba(245,136,31,.2);padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:.72rem;font-weight:700;color:var(--orange);white-space:nowrap;">✏️ Personaliza el demo:</span>
+      <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:180px;">
+        <span style="font-size:.7rem;color:var(--muted);white-space:nowrap;">🏢 Empresa:</span>
+        <input type="text" id="wms-empresa-input" placeholder="Tu Empresa" maxlength="28"
+          style="flex:1;padding:5px 10px;background:#0a111e;border:1px solid rgba(245,136,31,.35);color:var(--white);border-radius:7px;font-size:.78rem;font-family:'DM Sans',sans-serif;outline:none;min-width:0;"
+          oninput="wmsActualizarEmpresa()" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='rgba(245,136,31,.35)'">
       </div>
-      <div class="demo-bar">
-        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="demo-bar-title" id="wms-bar-title">Sistema WMS · Tu Empresa · Panel Almacén</span>
-        <div class="demo-bar-actions">
-          <button class="demo-btn" onclick="wmsAddEntry()">📥 Ingreso</button>
-          <button class="demo-btn" onclick="wmsDownloadExcel()">📊 Excel</button>
-        </div>
+      <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:160px;">
+        <span style="font-size:.7rem;color:var(--muted);white-space:nowrap;">👷 Operador:</span>
+        <input type="text" id="wms-operador-input" placeholder="Tu nombre" maxlength="24"
+          style="flex:1;padding:5px 10px;background:#0a111e;border:1px solid rgba(245,136,31,.35);color:var(--white);border-radius:7px;font-size:.78rem;font-family:'DM Sans',sans-serif;outline:none;min-width:0;"
+          oninput="wmsActualizarOperador()" onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='rgba(245,136,31,.35)'">
       </div>
-      <div class="demo-body">
-        <div class="wms-wrap" id="wms-wrap">
-          <div class="wms-sidebar">
+      <span style="font-size:.68rem;color:var(--muted);font-style:italic;white-space:nowrap;">→ Se refleja en el PDF</span>
+    </div>
+
+    <div class="wms-wrap" id="wms-wrap">
+      
+      <button class="btn-mobile-menu" onclick="document.querySelector('.wms-sidebar').classList.toggle('mobile-active')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        Opciones del WMS
+      </button>
+
+      <div class="wms-sidebar">
             <div class="wms-sidebar-logo"><span id="wms-sidebar-brand">TU EMPRESA WMS</span></div>
             <div class="wms-nav-item active" onclick="wmsTab('stock',this)">📦 Stock Consolidado</div>
             <div class="wms-nav-item" onclick="wmsTab('auditoria',this)">⚖️ Auditoría Surtido</div>
@@ -2221,17 +2279,18 @@ function wmsDownloadExcel(){
 
 // ---- WMS TAB SWITCHER ----
 function wmsTab(tab, el){
-  // Hide all tabs
-  ['stock','auditoria','prestamos','bitacora','kardextotal','pedidos','conciliacion'].forEach(t=>{
-    const el=document.getElementById('wms-tab-'+t);
-    if(el) el.style.display='none';
-  });
-  // Show selected
-  const target=document.getElementById('wms-tab-'+tab);
-  if(target) target.style.display='block';
-  // Update nav active
-  document.querySelectorAll('.wms-nav-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.wms-nav-btn').forEach(b => b.classList.remove('active'));
   if(el) el.classList.add('active');
+  document.querySelectorAll('.wms-panel').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(`wms-panel-${tab}`);
+  if(target) target.classList.add('active');
+
+  // LINEAS NUEVAS: Cierran automáticamente el menú deslizable al seleccionar una opción
+  const sidebar = document.querySelector('.wms-sidebar');
+  if(sidebar) {
+    sidebar.classList.remove('mobile-active');
+  }
+
   // Init tab data if needed
   if(tab==='auditoria') renderWMSConciliacion();
   if(tab==='prestamos') renderWMSPrestamos();
