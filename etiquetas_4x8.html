@@ -339,9 +339,10 @@
     <h2>📦 Extractor de Etiquetas — Word → 4×6</h2>
     <div class="controls">
         <input type="file" id="docx-upload" accept=".docx">
-        <button class="btn"        onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
+        <button class="btn"         onclick="procesarDOCX()">📄 Extraer Etiquetas</button>
         <button class="btn btn-nueva"  onclick="abrirModalNueva()">➕ Nueva Etiqueta</button>
         <button class="btn btn-print"  onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn" style="background:#3498db;" onclick="desmarcarTodas()">Desmarcar Todas</button>
         <button class="btn btn-danger" onclick="limpiarBaseDeDatos()">🗑️ Limpiar BD</button>
     </div>
     <div id="status">Sube tu archivo .docx y presiona "Extraer Etiquetas".</div>
@@ -883,6 +884,21 @@ function renderEtiquetaDesdeNube(key, estado, container) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  DESMARCAR TODAS LAS ETIQUETAS VALIDADAS
+// ═══════════════════════════════════════════════════════════════
+function desmarcarTodas() {
+    const seguro = confirm("¿Estás seguro de quitar el estado 'Validado' a todas las etiquetas?");
+    if (seguro) {
+        document.querySelectorAll('.label.validada').forEach(label => {
+            label.classList.remove('validada');
+            const btnVal = label.querySelector('.btn-validar');
+            if (btnVal) btnVal.textContent = '☐ Validar';
+            guardarEstado(label); // Guarda el cambio en Firebase/Local
+        });
+        actualizarContador();
+    }
+}
+    // ═══════════════════════════════════════════════════════════════
 //  LIMPIAR BASE DE DATOS
 // ═══════════════════════════════════════════════════════════════
 function limpiarBaseDeDatos() {
