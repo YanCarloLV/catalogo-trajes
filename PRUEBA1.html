@@ -645,6 +645,77 @@ body.is-mobile .demo-win .demo-bar { display: none !important; }
 #demo-fs-content .sup-tab-inventarios,
 #demo-fs-content #sup-tab-inventarios { grid-template-columns: 1fr !important; }
 #demo-fs-content #sup-tab-pedidos { grid-template-columns: 1fr !important; }
+/* =============================================
+   ADAPTACIÓN MÓVIL (WMS, Catálogos, Supervisor)
+============================================= */
+@media (max-width: 768px) {
+  /* 1. WMS - Ocultar y convertir Sidebar en Menú Deslizable (Bottom Sheet) */
+  .wms-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important; /* Permite el scroll natural del teléfono */
+  }
+
+  .wms-sidebar {
+    position: fixed !important;
+    bottom: -120% !important; /* Escondido abajo por defecto */
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 65vh !important; /* Ocupará máximo el 65% de la pantalla al abrirse */
+    background: rgba(10,22,40,0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    border-top: 2px solid var(--orange) !important;
+    border-right: none !important;
+    z-index: 99999 !important;
+    transition: bottom 0.4s cubic-bezier(0.3, 1, 0.32, 1) !important;
+    padding: 25px 20px !important;
+    box-shadow: 0 -15px 50px rgba(0,0,0,0.9) !important;
+    border-radius: 24px 24px 0 0 !important;
+    overflow-y: auto !important;
+  }
+
+  /* Clase que activa el menú hacia arriba */
+  .wms-sidebar.mobile-active {
+    bottom: 0 !important;
+  }
+
+  /* Diseño del botón hamburguesa que crearemos en el Paso 2 */
+  .btn-mobile-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--orange);
+    color: var(--navy);
+    font-weight: 700;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 15px rgba(245,136,31,0.3);
+    z-index: 9000;
+    cursor: pointer;
+  }
+
+  /* 2. Apilar Catálogos y Supervisor (Quitar el formato de dos columnas lado a lado) */
+  #catalogo-wrap, #supervisor-wrap, .demo-grid { 
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  /* 3. Tablas Responsivas (Para que no rompan el layout al no caber en la pantalla) */
+  .wms-table-wrap, table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important; /* Scroll suave en iOS */
+  }
+}
 </style>
 </head>
 <body>
@@ -3470,6 +3541,51 @@ document.addEventListener('keydown', e => {
 
 // Inicializar
 initMobileDemos();
+// =============================================
+// INYECCIÓN DE MENÚ MÓVIL PARA WMS
+// =============================================
+document.addEventListener('DOMContentLoaded', () => {
+    const wmsWrap = document.querySelector('.wms-wrap');
+    const wmsSidebar = document.querySelector('.wms-sidebar');
+
+    // Solo se ejecuta si los elementos del WMS existen en pantalla
+    if (wmsWrap && wmsSidebar) {
+        // 1. Crear el botón hamburguesa
+        const mobileBtn = document.createElement('button');
+        mobileBtn.className = 'btn-mobile-menu';
+        // Solo será visible en CSS si estamos en resolución móvil
+        mobileBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; 
+        
+        mobileBtn.innerHTML = `
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            Opciones del WMS
+        `;
+
+        // 2. Insertarlo justo al inicio del WMS
+        wmsWrap.prepend(mobileBtn);
+
+        // 3. Función para abrir/cerrar la hoja inferior (Bottom Sheet)
+        mobileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            wmsSidebar.classList.toggle('mobile-active');
+        });
+
+        // 4. UX: Si el usuario selecciona una opción del menú (ej. Auditoría), el menú se baja solo
+        const sidebarItems = wmsSidebar.querySelectorAll('li, .wms-menu-item, button, div');
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if(window.innerWidth <= 768) {
+                    wmsSidebar.classList.remove('mobile-active');
+                }
+            });
+        });
+
+        // Asegurarnos de mostrar/ocultar el botón si el usuario rota el teléfono
+        window.addEventListener('resize', () => {
+            mobileBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+        });
+    }
+});
 
 </script>
 <!-- ============================================================
