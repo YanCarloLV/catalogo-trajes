@@ -2991,7 +2991,7 @@ async function catalogExportPDF(){
     // Pegar la imagen en las coordenadas 0,0 y estirarla al 100% de los píxeles (cero bordes)
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pixelWidth, pixelHeight);
     
-    pdf.save(`Catalogo_${document.getElementById('cat-mod')?.value||'Demo'}.pdf`);
+    pdf.save(`CFicha_${document.getElementById('cat-mod')?.value||'Demo'}.pdf`);
     btns.forEach(b=>{ b.textContent='✅ PDF Descargado'; });
     setTimeout(()=>btns.forEach(b=>{ b.textContent='📑 Descargar PDF Real'; b.disabled=false; }),2200);
   } catch(e){
