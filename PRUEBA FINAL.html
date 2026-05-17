@@ -16,7 +16,7 @@
 input, select, textarea {
   font-size: 16px !important;
 }
-   
+
 /* =============================================
    VARIABLES
 ============================================= */
@@ -789,14 +789,14 @@ body.fs-demo-active #wms-panel {
   height: 100dvh !important;
   z-index: 9701 !important;
 }
+body.fs-demo-active #wms-panel.open {
+  right: 0 !important;
+}
 body.fs-demo-active #wms-toast {
   position: fixed !important;
   top: 80px !important;
   right: 14px !important;
   z-index: 99999 !important;
-}   
-body.fs-demo-active #wms-panel.open {
-  right: 0 !important;
 }
 body.fs-demo-active .wms-sidebar {
   display: flex !important;
@@ -3126,6 +3126,9 @@ function supRenderTallas(){
     cont.appendChild(toggleBtn);
   });
 }
+// Init tallas on page load
+document.addEventListener('DOMContentLoaded',supRenderTallas);
+setTimeout(supRenderTallas,500);
 
 // ---- MODELO → COLOR MAP ----
 const supColorMap={
@@ -3645,41 +3648,6 @@ document.addEventListener('keydown', e => {
 
 // Inicializar
 initMobileDemos();
-// =============================================
-// INYECCIÓN DE MENÚ MÓVIL PARA WMS
-// =============================================
-
-        
-        mobileBtn.innerHTML = `
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            Opciones del WMS
-        `;
-
-        // 2. Insertarlo justo al inicio del WMS
-        wmsWrap.prepend(mobileBtn);
-
-        // 3. Función para abrir/cerrar la hoja inferior (Bottom Sheet)
-        mobileBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            wmsSidebar.classList.toggle('mobile-active');
-        });
-
-        // 4. UX: Si el usuario selecciona una opción del menú (ej. Auditoría), el menú se baja solo
-        const sidebarItems = wmsSidebar.querySelectorAll('li, .wms-menu-item, button, div');
-        sidebarItems.forEach(item => {
-            item.addEventListener('click', () => {
-                if(window.innerWidth <= 768) {
-                    wmsSidebar.classList.remove('mobile-active');
-                }
-            });
-        });
-
-        // Asegurarnos de mostrar/ocultar el botón si el usuario rota el teléfono
-        window.addEventListener('resize', () => {
-            mobileBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-        });
-    }
-});
 
 </script>
 <!-- ============================================================
