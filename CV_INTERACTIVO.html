@@ -1377,7 +1377,7 @@ body.fs-demo-active .wms-wrap {
       </div>
       <div class="demo-body" style="overflow:auto;">
         <div class="catalog-demo-wrap">
-          <div class="catalog-controls" style="overflow-y:auto;max-height:600px;">
+          <div class="catalog-controls">
 
             <!-- MARCA PERSONALIZABLE -->
             <div class="cat-input-group">
@@ -2977,23 +2977,21 @@ async function catalogExportPDF(){
     imgs.forEach((img,i)=>{ img.src = origSrcs[i]; });
 
     const {jsPDF} = window.jspdf;
-    const pdf = new jsPDF({ orientation:'l', unit:'mm', format:'letter' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgW = pageW;
-    const imgH = (canvas.height * pageW) / canvas.width;
-    if(imgH <= pageH){
-      const yOffset = (pageH - imgH) / 2;
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, yOffset, imgW, imgH);
-    } else {
-      const ratio = pageH / imgH;
-      const scaledW = imgW * ratio;
-      const xOffset = (pageW - scaledW) / 2;
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xOffset, 0, scaledW, pageH);
-    }
-    const marca = (document.getElementById('cat-marca')?.value||'TuMarca').replace(/[^a-zA-Z0-9]/g,'_');
-    const mod   = document.getElementById('cat-mod').value.replace(/[^a-zA-Z0-9]/g,'_');
-    pdf.save(`CATALOGO_${marca}_${mod}.pdf`);
+    
+    // Tomar medidas exactas del diseño para que la hoja PDF nazca de ese tamaño
+    const pixelWidth = element.offsetWidth;
+    const pixelHeight = element.offsetHeight;
+    
+    const pdf = new jsPDF({ 
+      orientation: pixelWidth > pixelHeight ? 'l' : 'p', 
+      unit: 'px', 
+      format: [pixelWidth, pixelHeight] 
+    });
+    
+    // Pegar la imagen en las coordenadas 0,0 y estirarla al 100% de los píxeles (cero bordes)
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pixelWidth, pixelHeight);
+    
+    pdf.save(`Catalogo_${document.getElementById('cat-mod')?.value||'Demo'}.pdf`);
     btns.forEach(b=>{ b.textContent='✅ PDF Descargado'; });
     setTimeout(()=>btns.forEach(b=>{ b.textContent='📑 Descargar PDF Real'; b.disabled=false; }),2200);
   } catch(e){
