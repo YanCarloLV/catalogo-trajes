@@ -2308,12 +2308,23 @@ function wmsDownloadExcel(){
 
 // ---- WMS TAB SWITCHER ----
 function wmsTab(tab, el){
-  document.querySelectorAll('.wms-nav-btn').forEach(b => b.classList.remove('active'));
+  // Quitar active de todos los nav items
+  document.querySelectorAll('.wms-nav-item').forEach(b => b.classList.remove('active'));
   if(el) el.classList.add('active');
-  document.querySelectorAll('.wms-panel').forEach(p => p.classList.remove('active'));
-  const target = document.getElementById(`wms-panel-${tab}`);
-  if(target) target.classList.add('active');
 
+  // Ocultar todos los tabs
+  ['stock','auditoria','prestamos','bitacora','kardextotal','pedidos','conciliacion'].forEach(t => {
+    const div = document.getElementById(`wms-tab-${t}`);
+    if(div) div.style.display = 'none';
+  });
+
+  // Mostrar el tab correcto
+  const target = document.getElementById(`wms-tab-${tab}`);
+  if(target) target.style.display = 'block';
+
+  // Cerrar menú móvil automáticamente
+  const sidebar = document.querySelector('.wms-sidebar');
+  if(sidebar) sidebar.classList.remove('mobile-active');
   // LINEAS NUEVAS: Cierran automáticamente el menú deslizable al seleccionar una opción
   const sidebar = document.querySelector('.wms-sidebar');
   if(sidebar) {
