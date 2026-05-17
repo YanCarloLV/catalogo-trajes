@@ -12,6 +12,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
+/* Evita zoom al enfocar inputs en iOS */
+input, select, textarea {
+  font-size: 16px !important;
+}
+   
 /* =============================================
    VARIABLES
 ============================================= */
@@ -784,6 +789,12 @@ body.fs-demo-active #wms-panel {
   height: 100dvh !important;
   z-index: 9701 !important;
 }
+body.fs-demo-active #wms-toast {
+  position: fixed !important;
+  top: 80px !important;
+  right: 14px !important;
+  z-index: 99999 !important;
+}   
 body.fs-demo-active #wms-panel.open {
   right: 0 !important;
 }
@@ -3640,17 +3651,7 @@ initMobileDemos();
 // =============================================
 // INYECCIÓN DE MENÚ MÓVIL PARA WMS
 // =============================================
-document.addEventListener('DOMContentLoaded', () => {
-    const wmsWrap = document.querySelector('.wms-wrap');
-    const wmsSidebar = document.querySelector('.wms-sidebar');
 
-    // Solo se ejecuta si los elementos del WMS existen en pantalla
-    if (wmsWrap && wmsSidebar) {
-        // 1. Crear el botón hamburguesa
-        const mobileBtn = document.createElement('button');
-        mobileBtn.className = 'btn-mobile-menu';
-        // Solo será visible en CSS si estamos en resolución móvil
-        mobileBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none'; 
         
         mobileBtn.innerHTML = `
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
