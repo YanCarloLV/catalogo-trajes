@@ -2325,11 +2325,6 @@ function wmsTab(tab, el){
   // Cerrar menú móvil automáticamente
   const sidebar = document.querySelector('.wms-sidebar');
   if(sidebar) sidebar.classList.remove('mobile-active');
-  // LINEAS NUEVAS: Cierran automáticamente el menú deslizable al seleccionar una opción
-  const sidebar = document.querySelector('.wms-sidebar');
-  if(sidebar) {
-    sidebar.classList.remove('mobile-active');
-  }
 
   // Init tab data if needed
   if(tab==='auditoria') renderWMSConciliacion();
